@@ -1,0 +1,4 @@
+build/
+tests/sameboy/bin/
+__pycache__/
+*.pyc
