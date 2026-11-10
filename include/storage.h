@@ -10,7 +10,7 @@
 #define SLOT_OK    1
 #define SLOT_BAD   2          /* header present but checksum/version/size wrong */
 
-#define SAVE_VERSION 1
+#define SAVE_VERSION 2              /* v1 (ETCH 1.0) slots still load */
 #define SAVE_NONE    0xFF
 
 uint8_t storage_slot_status(uint8_t slot, char *name_out) ETCH_BANKED;  /* name_out: 10 chars */

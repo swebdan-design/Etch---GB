@@ -45,8 +45,10 @@
 #define T_ACT2 198
 #define T_ACT3 199
 #define T_ACT4 200
-#define T_TIE_DASH 201
-#define GFX_SYM_COUNT 42
+#define T_ARROW_L 201
+#define T_HIT 202
+#define T_TIE_DASH 203
+#define GFX_SYM_COUNT 44
 #define GFX_LOGO_TILES 41
 #define GFX_LOGO_W 16
 #define GFX_LOGO_H 5

@@ -63,6 +63,22 @@ class Etch:
         self.e.tick(30)
 
 
+def scr(et):
+    """screen name from the header (col 0 is the left-arrow tile)"""
+    return et.e.screen_text()[0][1:6].strip()
+
+
+def sel(et, d):
+    et.e.hold("select"); et.e.press(d, hold=5, after=3); et.e.release("select")
+    et.e.tick(20)
+
+
+def to_save(et):
+    """LIVE -> GEN -> SONG -> SAVE"""
+    for _ in range(3):
+        sel(et, "right")
+
+
 def rms(a):
     return float(np.sqrt(np.mean(a.astype(np.float64) ** 2))) if len(a) else 0.0
 
@@ -125,7 +141,7 @@ def main():
 
     et.e.press("start")
     et.e.tick(30)
-    rec("START on title -> LIVE screen", et.e.screen_text()[0].startswith("LIVE"), et.e.screen_text()[0])
+    rec("START on title -> LIVE screen", scr(et) == "LIVE", et.e.screen_text()[0])
     rec("START on title starts playback immediately", et.e.rd("seq_playing") == 1)
     et.e.screenshot(os.path.join(art, "screen_live.png"))
 
@@ -145,18 +161,112 @@ def main():
     x, sr = capture(et, os.path.join(art, "live_groove.wav"), 600)
     rec("audio output present during playback", rms(x) > 300, "rms=%.0f" % rms(x))
 
-    # ---- screens reachable ---------------------------------------------------
-    names = ["LIVE", "GRID", "DRUM", "SYNTH", "GEN", "CHAIN", "SAVE"]
-    for i in range(1, 7):
-        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
-        et.e.tick(20)
-        hdr = et.e.screen_text()[0]
-        rec("SELECT+RIGHT reaches %s" % names[i], hdr.startswith(names[i]), hdr)
-        et.e.screenshot(os.path.join(art, "screen_%s.png" % names[i].lower()))
-    et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
-    et.e.tick(20)
-    rec("screen cycle wraps to LIVE", et.e.screen_text()[0].startswith("LIVE"))
+    # ---- screens reachable: SYNTH < TRACK < LIVE > GEN > SONG > SAVE --------
+    sel(et, "left")
+    rec("SELECT+LEFT from LIVE -> TRACK", scr(et) == "TRACK", et.e.screen_text()[0])
+    et.e.tick(80)
+    rec("TRACK shows column titles", et.e.screen_text()[1].startswith(" # NOT ASL KSHO P CD"), et.e.screen_text()[1])
+    et.e.screenshot(os.path.join(art, "screen_track.png"))
+    sel(et, "left")
+    rec("SELECT+LEFT from TRACK -> SYNTH", scr(et) == "SYNTH")
+    et.e.screenshot(os.path.join(art, "screen_synth.png"))
+    sel(et, "left")
+    rec("SYNTH is the left end (no wrap)", scr(et) == "SYNTH")
+    sel(et, "right")
+    rec("SELECT+RIGHT from SYNTH -> TRACK", scr(et) == "TRACK")
+    sel(et, "right")
+    rec("SELECT+RIGHT from TRACK -> LIVE", scr(et) == "LIVE")
+    for name in ("GEN", "SONG", "SAVE"):
+        sel(et, "right")
+        rec("SELECT+RIGHT reaches %s" % name, scr(et) == name, et.e.screen_text()[0])
+        et.e.screenshot(os.path.join(art, "screen_%s.png" % name.lower()))
+    sel(et, "right")
+    rec("SAVE is the right end (no wrap)", scr(et) == "SAVE")
+    for _ in range(3):
+        sel(et, "left")
+    rec("back to LIVE", scr(et) == "LIVE")
     rec("playback continued through all screen changes", et.e.rd("seq_playing") == 1)
+
+    # ---- LIVE: basic step sequencing ------------------------------------------
+    et.e.press("start"); et.e.tick(10)                      # stop for deterministic edits
+    cur = et.e.rd("seq_cur")
+    pb = PAT + 64 * cur
+    # cursor starts on BS step 1; move to step 2 (index 1)
+    et.e.press("right")
+    f1 = et.pb(pb + P_FLAGS + 1)[0] & 3
+    et.e.press("a"); et.e.tick(3)
+    f1b = et.pb(pb + P_FLAGS + 1)[0] & 3
+    rec("LIVE: A toggles a bass step", f1 != f1b, "type %d -> %d" % (f1, f1b))
+    if f1b != 1:
+        et.e.press("a"); et.e.tick(3)
+    n0 = et.pb(pb + P_NOTE + 1)[0]
+    et.e.hold("a"); et.e.press("right"); et.e.press("right"); et.e.press("up"); et.e.release("a"); et.e.tick(3)
+    n1 = et.pb(pb + P_NOTE + 1)[0]
+    rec("LIVE: A+RIGHT x2 +2 semitones, A+UP +1 octave", n1 == min(47, n0 + 14) and et.pb(pb + P_FLAGS + 1)[0] & 3 == 1,
+        "note %d -> %d" % (n0, n1))
+    et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
+    rec("LIVE: B+A removes the bass step", et.pb(pb + P_FLAGS + 1)[0] & 3 == 0)
+    et.e.press("down")                                       # KK lane, step 2
+    k0 = et.pb(pb + P_DRUM, 2); k0 = k0[0] | k0[1] << 8
+    et.e.press("a"); et.e.tick(3)
+    k1 = et.pb(pb + P_DRUM, 2); k1 = k1[0] | k1[1] << 8
+    rec("LIVE: A toggles a drum hit", (k0 ^ k1) == 0x0002, "kick %04X -> %04X" % (k0, k1))
+    et.e.press("a"); et.e.tick(3)
+    et.e.press("left"); et.e.press("left")                  # to the lane name
+    m0 = et.pb(MUTES)[0]
+    et.e.press("a"); et.e.tick(3)
+    rec("LIVE: A on the lane name mutes the lane", (et.pb(MUTES)[0] ^ m0) == 0x02)
+    et.e.press("a"); et.e.tick(3)
+    rec("LIVE: help line explains the cursor", "MUTE" in et.e.screen_text()[17], et.e.screen_text()[17])
+
+    # ---- TRACK: tracker editing ---------------------------------------------
+    sel(et, "left")
+    # cursor: step 0, NOTE column; go to step 5
+    for _ in range(5):
+        et.e.press("down")
+    if et.pb(pb + P_FLAGS + 5)[0] & 3:
+        et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
+    rec("TRACK: B+A clears a note to a rest", et.pb(pb + P_FLAGS + 5)[0] & 3 == 0)
+    et.e.press("a"); et.e.tick(3)
+    rec("TRACK: A on an empty step writes a note", et.pb(pb + P_FLAGS + 5)[0] & 3 == 1)
+    et.e.press("a"); et.e.tick(3)
+    rec("TRACK: A tap on a note turns it into a tie", et.pb(pb + P_FLAGS + 5)[0] & 3 == 2)
+    et.e.press("a"); et.e.tick(3)
+    nb = et.pb(pb + P_NOTE + 5)[0]
+    et.e.hold("a"); et.e.press("down"); et.e.release("a"); et.e.tick(3)
+    rec("TRACK: A+DOWN lowers an octave", et.pb(pb + P_NOTE + 5)[0] == max(0, nb - 12))
+    for _ in range(4):
+        et.e.press("right")                                  # NOTE A S L K -> K column
+    kk = et.pb(pb + P_DRUM, 2); kk = kk[0] | kk[1] << 8
+    et.e.press("a"); et.e.tick(3)
+    kk2 = et.pb(pb + P_DRUM, 2); kk2 = kk2[0] | kk2[1] << 8
+    rec("TRACK: A in the K column toggles the kick", (kk ^ kk2) == 0x0020, "%04X -> %04X" % (kk, kk2))
+    for _ in range(4):
+        et.e.press("right")                                  # -> P column
+    et.e.hold("a"); et.e.press("left"); et.e.press("left"); et.e.release("a"); et.e.tick(3)
+    rec("TRACK: A+LEFT lowers the step chance", et.pb(pb + P_PROB + 5)[0] & 7 == 5)
+    et.e.press("right")                                      # CD column
+    et.e.hold("a"); et.e.press("right"); et.e.release("a"); et.e.tick(3)
+    rec("TRACK: A+RIGHT sets a condition", et.pb(pb + P_PROB + 5)[0] >> 4 == 1)
+    et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
+    rec("TRACK: B+A resets the condition", et.pb(pb + P_PROB + 5)[0] >> 4 == 0)
+
+    # ---- SYNTH: per-channel pages, drum voicing reaches the hardware -----------
+    sel(et, "left")
+    et.e.hold("b"); et.e.press("right"); et.e.release("b"); et.e.tick(5)
+    rec("SYNTH: B+RIGHT switches to the KICK page", "SOUND" in "\n".join(et.e.screen_text()))
+    tune_off = 73 + 64 * 32
+    et.e.press("down")                                        # SOUND -> TUNE
+    et.e.hold("a"); et.e.press("right"); et.e.press("right"); et.e.release("a"); et.e.tick(3)
+    rec("SYNTH: A+RIGHT raises kick TUNE", et.pb(tune_off + 0)[0] == 10, "tune=%d" % et.pb(tune_off)[0])
+    lvl_off = tune_off + 8
+    rec("SYNTH: drum LEVEL default full", et.pb(lvl_off)[0] == 15)
+    et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
+    rec("SYNTH: B+A restores the default", et.pb(tune_off)[0] == 8)
+    for _ in range(2):
+        sel(et, "right")
+    rec("back to LIVE after editing", scr(et) == "LIVE")
+    et.e.press("start"); et.e.tick(10)
 
     # ---- synth: cutoff/resonance change timbre (isolated bass) ---------------
     et.e.press("start"); et.e.tick(10)                      # stop
@@ -309,10 +419,8 @@ def main():
     et = Etch(rom)
     et.boot_to_live()
     # go to SAVE screen
-    for i in range(6):
-        et.e.hold("select"); et.e.press("left" if False else "right", hold=5, after=3); et.e.release("select")
-    et.e.tick(20)
-    rec("SAVE screen reached", et.e.screen_text()[0].startswith("SAVE"))
+    to_save(et)
+    rec("SAVE screen reached", scr(et) == "SAVE")
     txt = "\n".join(et.e.screen_text())
     rec("blank SRAM shows empty slots (not corrupt)", "--empty--" in txt and "CORRUPT" not in txt)
     # make the project distinctive, then save to slot 3 (index 2)
@@ -328,9 +436,7 @@ def main():
 
     et = Etch(rom, bat)
     et.boot_to_live()
-    for i in range(6):
-        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
-    et.e.tick(20)
+    to_save(et)
     txt = "\n".join(et.e.screen_text())
     rec("slot persists across power cycle", "S3 CONTACT" in txt or "S3*CONTACT" in txt, [r for r in et.e.screen_text() if r.startswith("S3")])
     et.e.press("down"); et.e.press("down")
@@ -350,9 +456,7 @@ def main():
     open(bad, "wb").write(data)
     et = Etch(rom, bad)
     et.boot_to_live()
-    for i in range(6):
-        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
-    et.e.tick(20)
+    to_save(et)
     txt = "\n".join(et.e.screen_text())
     rec("corrupted slot detected (checksum)", "CORRUPT" in txt)
     cut_before = et.pb(SYNTH + S_CUT)[0]
@@ -364,8 +468,7 @@ def main():
     # ---- every ROM track loads through the UI and plays ----------------------
     et = Etch(rom)
     et.boot_to_live()
-    et.e.hold("select"); et.e.press("left"); et.e.release("select")   # LIVE -> SAVE
-    et.e.tick(20)
+    to_save(et)
     names = ["CONTACT", "CONCRETE", "STATIC", "CORROSION", "NIGHTSHIFT", "WAREHOUSE", "SIGNALLOSS", "AFTERIMAGE"]
     for t in range(8):
         et.e.press("down" if t else "down")

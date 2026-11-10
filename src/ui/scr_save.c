@@ -5,6 +5,7 @@
  *   UP/DOWN      select a slot or track
  *   LEFT/RIGHT   slot action: LOAD / SAVE / ERASE
  *   A            arm; A again confirms (saving to an empty slot is immediate)
+ *   A, A on a track loads that ROM track
  */
 #pragma bank 255
 #include <gbdk/platform.h>
@@ -80,12 +81,12 @@ void scr_save_enter(void) BANKED
 
 void scr_save_frame(void) BANKED
 {
-    uint8_t old = cur;
-    if (key_held & (J_SELECT | J_B)) return;
-    if (key_repeat & J_UP) cur = cur ? (uint8_t)(cur - 1) : (uint8_t)(N_ROWS - 1);
-    if (key_repeat & J_DOWN) cur = (uint8_t)((cur + 1) % N_ROWS);
-    if ((key_repeat & (J_LEFT | J_RIGHT)) && cur < NUM_SLOTS) {
-        act = (uint8_t)((act + ((key_repeat & J_RIGHT) ? 1 : 2)) % 3);
+    uint8_t old = cur, nav = ui_nav();
+    int8_t d = ui_edit(1);
+    if (nav & J_UP) cur = cur ? (uint8_t)(cur - 1) : (uint8_t)(N_ROWS - 1);
+    if (nav & J_DOWN) cur = (uint8_t)((cur + 1) % N_ROWS);
+    if (((nav & (J_LEFT | J_RIGHT)) || d) && cur < NUM_SLOTS) {
+        act = (uint8_t)((act + (((nav & J_RIGHT) || d > 0) ? 1 : 2)) % 3);
         armed = 0xFF;
         draw_row(cur);
     }
@@ -94,7 +95,7 @@ void scr_save_frame(void) BANKED
         draw_row(old);
         draw_row(cur);
     }
-    if (key_pressed & J_A) {
+    if (ui_a_tap()) {
         if (cur < NUM_SLOTS) {
             uint8_t s = cur;
             uint8_t needs_confirm = !(act == 1 && status[s] == SLOT_EMPTY);

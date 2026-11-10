@@ -75,47 +75,118 @@ static uint8_t  clap_left, clap_timer, clap_env, clap_poly;
 
 void drums_init(void)
 {
+    drums_revoice();
+    drums_silence();
+}
+
+void drums_silence(void)
+{
     t1_on = t2_on = 0;
     clap_left = 0;
     NR12_REG = 0; NR22_REG = 0; NR42_REG = 0;
     NR10_REG = 0x00;                  /* no hardware sweep */
 }
 
-void drums_silence(void)
+
+
+uint16_t mul8x8(uint8_t a, uint8_t b);
+
+/* per-lane voicing: TUNE shifts the tone period (or the noise clock), DECAY
+ * stretches the hardware envelope / length counter, LEVEL scales volume */
+static const uint8_t tune_shift[NUM_LANES] = { 5, 4, 0, 3 };   /* period step = 1 << n */
+
+static uint8_t env_voice(uint8_t env, uint8_t lane)
 {
-    drums_init();
+    uint8_t vol = env >> 4, pace = env & 7;
+    int8_t dp = (int8_t)((int8_t)proj.drum_decay[lane] - 8) >> 1;
+    vol = (uint8_t)(mul8x8(vol, (uint8_t)(proj.drum_level[lane] + 1)) >> 4);
+    if (!vol && proj.drum_level[lane]) vol = 1;
+    if (pace) {
+        int8_t p = (int8_t)pace + dp;
+        if (p < 1) p = 1;
+        if (p > 7) p = 7;
+        pace = (uint8_t)p;
+    }
+    return (uint8_t)((vol << 4) | (env & 0x08) | pace);
 }
 
-static void tone1(const drum_def_t *d)
+static uint16_t tune_period(uint16_t per, uint8_t lane)
 {
-    t1_per = d->f0; t1_end = d->f1; t1_shift = d->fshift; t1_on = 1;
+    int16_t t = (int16_t)proj.drum_tune[lane] - 8;
+    int16_t p = (int16_t)per + (t << tune_shift[lane]);
+    if (p < 0) p = 0;
+    if (p > 2040) p = 2040;
+    return (uint16_t)p;
+}
+
+/* Voiced copies of every kit sound, rebuilt in the main loop whenever the
+ * voicing changes (drums_revoice), so triggering costs the ISR nothing extra. */
+typedef struct { uint16_t f0, f1; uint8_t tenv, nenv, npoly, nlen; } voiced_t;
+static voiced_t voiced[NUM_LANES][KITS_PER_LANE];
+
+void drums_revoice(void)
+{
+    uint8_t l, k;
+    voiced_t v;
+    for (l = 0; l < NUM_LANES; l++) {
+        for (k = 0; k < KITS_PER_LANE; k++) {
+            const drum_def_t *d = &kits[l][k];
+            int8_t sh;
+            v.f0 = tune_period(d->f0, l);
+            v.f1 = d->f1 ? tune_period(d->f1, l) : 0;
+            if (v.f1 > v.f0) v.f1 = v.f0;
+            v.tenv = env_voice(d->tenv, l);
+            v.nenv = env_voice(d->nenv, l);
+            sh = (int8_t)(d->npoly >> 4) - (((int8_t)proj.drum_tune[l] - 8) >> 1);
+            if (sh < 0) sh = 0;
+            if (sh > 13) sh = 13;
+            v.npoly = (uint8_t)((sh << 4) | (d->npoly & 0x0F));
+            v.nlen = d->nlen;
+            if (v.nlen) {
+                int8_t n = (int8_t)v.nlen - ((int8_t)proj.drum_decay[l] - 8);
+                if (n < 0) n = 0;
+                if (n > 63) n = 63;
+                v.nlen = (uint8_t)n;
+            }
+            CRITICAL { voiced[l][k] = v; }
+        }
+    }
+}
+
+static void tone1(const drum_def_t *d, const voiced_t *v)
+{
+    t1_per = v->f0;
+    t1_end = v->f1;
+    t1_shift = d->fshift; t1_on = 1;
     NR10_REG = 0x00;
     NR11_REG = d->duty;
-    NR12_REG = d->tenv;
+    NR12_REG = v->tenv;
     NR13_REG = (uint8_t)t1_per;
     NR14_REG = 0x80 | (uint8_t)(t1_per >> 8);
 }
 
-static void tone2(const drum_def_t *d)
+static void tone2(const drum_def_t *d, const voiced_t *v)
 {
-    t2_per = d->f0; t2_end = d->f1; t2_shift = d->fshift; t2_on = 1;
+    t2_per = v->f0;
+    t2_end = v->f1;
+    t2_shift = d->fshift; t2_on = 1;
     NR21_REG = d->duty;
-    NR22_REG = d->tenv;
+    NR22_REG = v->tenv;
     NR23_REG = (uint8_t)t2_per;
     NR24_REG = 0x80 | (uint8_t)(t2_per >> 8);
 }
 
-static void noise(const drum_def_t *d)
+static void noise(const drum_def_t *d, const voiced_t *v)
 {
-    NR41_REG = d->nlen;
-    NR42_REG = d->nenv;
-    NR43_REG = d->npoly;
-    NR44_REG = d->nlen ? 0xC0 : 0x80;
+    NR41_REG = v->nlen;
+    NR42_REG = v->nenv;
+    NR43_REG = v->npoly;
+    NR44_REG = v->nlen ? 0xC0 : 0x80;
     clap_left = d->retrig;
     if (clap_left) {
         clap_timer = 0;
-        clap_env = d->nenv;
-        clap_poly = d->npoly;
+        clap_env = v->nenv;
+        clap_poly = v->npoly;
     }
 }
 
@@ -124,30 +195,31 @@ void drums_play(uint8_t lanes, const uint8_t *kit)
     const drum_def_t *noise_src = 0;
     const drum_def_t *tone2_src = 0;
     const drum_def_t *d;
+    const voiced_t *nv = 0, *tv = 0;
 
     /* lowest priority first, higher priority overwrites */
     if (lanes & (1 << LANE_CH)) {
         d = &kits[LANE_CH][kit[LANE_CH] & 3];
-        noise_src = d;
+        noise_src = d; nv = &voiced[LANE_CH][kit[LANE_CH] & 3];
     }
     if (lanes & (1 << LANE_OH)) {
         d = &kits[LANE_OH][kit[LANE_OH] & 3];
-        if (d->use & USE_NOISE) noise_src = d;
-        if (d->use & USE_TONE2) tone2_src = d;
+        if (d->use & USE_NOISE) { noise_src = d; nv = &voiced[LANE_OH][kit[LANE_OH] & 3]; }
+        if (d->use & USE_TONE2) { tone2_src = d; tv = &voiced[LANE_OH][kit[LANE_OH] & 3]; }
     }
     if (lanes & (1 << LANE_SNARE)) {
         d = &kits[LANE_SNARE][kit[LANE_SNARE] & 3];
-        if (d->use & USE_NOISE) noise_src = d;
-        if (d->use & USE_TONE2) tone2_src = d;
+        if (d->use & USE_NOISE) { noise_src = d; nv = &voiced[LANE_SNARE][kit[LANE_SNARE] & 3]; }
+        if (d->use & USE_TONE2) { tone2_src = d; tv = &voiced[LANE_SNARE][kit[LANE_SNARE] & 3]; }
     }
     if (lanes & (1 << LANE_KICK)) {
         d = &kits[LANE_KICK][kit[LANE_KICK] & 3];
-        tone1(d);
+        tone1(d, &voiced[LANE_KICK][kit[LANE_KICK] & 3]);
         /* CLICK kick adds a tiny noise transient only if CH4 is free */
-        if ((d->use & USE_NOISE) && !noise_src) noise_src = d;
+        if ((d->use & USE_NOISE) && !noise_src) { noise_src = d; nv = &voiced[LANE_KICK][kit[LANE_KICK] & 3]; }
     }
-    if (tone2_src) tone2(tone2_src);
-    if (noise_src) noise(noise_src);
+    if (tone2_src) tone2(tone2_src, tv);
+    if (noise_src) noise(noise_src, nv);
 }
 
 void drums_tick(void)

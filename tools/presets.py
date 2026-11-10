@@ -262,6 +262,7 @@ void preset_load(uint8_t t) BANKED
         if (i < n) memcpy(&proj.pat[i], d + (uint16_t)i * 64, 64);
         else pattern_clear(&proj.pat[i]);
     }
+    project_drum_defaults(&proj);
 }
 """)
     open(out, "w").write("\n".join(L) + "\n")

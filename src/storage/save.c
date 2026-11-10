@@ -43,7 +43,8 @@ static uint8_t check(uint8_t *base)
     if (base[0] != 'E' || base[1] != 'T' || base[2] != 'C' || base[3] != 'H') return SLOT_EMPTY;
     size = (uint16_t)(base[6] | (base[7] << 8));
     sum = (uint16_t)(base[8] | (base[9] << 8));
-    if (base[4] != SAVE_VERSION || size != sizeof(project_t)) return SLOT_BAD;
+    if (!((base[4] == SAVE_VERSION && size == sizeof(project_t)) ||
+          (base[4] == 1 && size == PROJECT_V1_SIZE))) return SLOT_BAD;
     if (fletcher(base + HDR_SIZE, size) != sum) return SLOT_BAD;
     return SLOT_OK;
 }
@@ -93,14 +94,16 @@ uint8_t storage_save(uint8_t slot) ETCH_BANKED
 uint8_t storage_load(uint8_t slot) ETCH_BANKED
 {
     uint8_t *b;
-    uint16_t off;
+    uint16_t off, size;
     if (slot >= NUM_SLOTS) return 0;
     ENABLE_RAM;
     b = slot_base(slot);
     if (check(b) != SLOT_OK) { DISABLE_RAM; return 0; }
+    size = (uint16_t)(b[6] | (b[7] << 8));
+    if (size < sizeof(project_t)) project_drum_defaults(&proj);   /* v1 slot */
     /* copy in short critical chunks so playback keeps its timing */
-    for (off = 0; off < sizeof(project_t); off += 64) {
-        uint16_t n = sizeof(project_t) - off;
+    for (off = 0; off < size; off += 64) {
+        uint16_t n = size - off;
         if (n > 64) n = 64;
         CRITICAL {
             memcpy((uint8_t *)&proj + off, b + HDR_SIZE + off, n);

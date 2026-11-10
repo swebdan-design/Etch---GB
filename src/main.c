@@ -14,6 +14,7 @@
 #include "presets.h"
 
 uint8_t app_screen;
+uint8_t app_last_note = 21;         /* A2: what A writes on an empty step */
 static uint8_t need_redraw;
 static uint8_t audition_timer;
 static pattern_t anchor;            /* DRIFT's musical memory */
@@ -124,6 +125,7 @@ void app_project_loaded(void)
     }
     anchor_pat = 0xFF;
     seq_set_tempo();
+    drums_revoice();
     app_redraw();
 }
 
@@ -139,12 +141,11 @@ void app_load_track(uint8_t t)
 static void enter_screen(void)
 {
     switch (app_screen) {
-    case SCR_LIVE:  scr_live_enter(); break;
-    case SCR_GRID:  scr_grid_enter(); break;
-    case SCR_DRUM:  scr_drum_enter(); break;
     case SCR_SYNTH: scr_synth_enter(); break;
+    case SCR_TRACK: scr_track_enter(); break;
+    case SCR_LIVE:  scr_live_enter(); break;
     case SCR_GEN:   scr_gen_enter(); break;
-    case SCR_CHAIN: scr_chain_enter(); break;
+    case SCR_SONG:  scr_song_enter(); break;
     default:        scr_save_enter(); break;
     }
 }
@@ -152,21 +153,23 @@ static void enter_screen(void)
 static void frame_screen(void)
 {
     switch (app_screen) {
-    case SCR_LIVE:  scr_live_frame(); break;
-    case SCR_GRID:  scr_grid_frame(); break;
-    case SCR_DRUM:  scr_drum_frame(); break;
     case SCR_SYNTH: scr_synth_frame(); break;
+    case SCR_TRACK: scr_track_frame(); break;
+    case SCR_LIVE:  scr_live_frame(); break;
     case SCR_GEN:   scr_gen_frame(); break;
-    case SCR_CHAIN: scr_chain_frame(); break;
+    case SCR_SONG:  scr_song_frame(); break;
     default:        scr_save_frame(); break;
     }
 }
 
+static uint8_t show_map;
+
 static void global_keys(void)
 {
     if (key_held & J_SELECT) {
-        if (key_pressed & J_RIGHT) { app_screen = (uint8_t)((app_screen + 1) % SCR_COUNT); need_redraw = 1; }
-        if (key_pressed & J_LEFT) { app_screen = (uint8_t)((app_screen + SCR_COUNT - 1) % SCR_COUNT); need_redraw = 1; }
+        /* the screens form one row:  SYNTH < TRACK < LIVE > GEN > SONG > SAVE */
+        if ((key_pressed & J_RIGHT) && app_screen + 1 < SCR_COUNT) { app_screen++; need_redraw = 1; show_map = 1; }
+        if ((key_pressed & J_LEFT) && app_screen > 0) { app_screen--; need_redraw = 1; show_map = 1; }
         if (key_pressed & J_UP) {
             uint8_t base = seq_queued != 0xFF ? seq_queued : seq_cur;
             seq_queue_pattern((uint8_t)((base + 1) % NUM_PATTERNS));
@@ -226,6 +229,7 @@ void main(void)
         if (need_redraw) {
             need_redraw = 0;
             enter_screen();
+            if (show_map) { show_map = 0; ui_msg_map(app_screen); }
         } else {
             frame_screen();
         }

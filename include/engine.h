@@ -36,6 +36,7 @@ void drums_init(void);
 void drums_play(uint8_t lanes, const uint8_t *kit);   /* lanes bitmask */
 void drums_tick(void);
 void drums_silence(void);
+void drums_revoice(void);                             /* after voicing changes (main loop) */
 extern const char * const drum_kit_names[NUM_LANES][KITS_PER_LANE];
 extern const uint8_t drum_kit_count[NUM_LANES];
 

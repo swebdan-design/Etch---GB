@@ -17,6 +17,16 @@ void pattern_clear(pattern_t *p) ETCH_BANKED
     }
 }
 
+void project_drum_defaults(project_t *p) ETCH_BANKED
+{
+    uint8_t l;
+    for (l = 0; l < NUM_LANES; l++) {
+        p->drum_tune[l] = 8;
+        p->drum_decay[l] = 8;
+        p->drum_level[l] = 15;
+    }
+}
+
 uint8_t pattern_note_count(const pattern_t *p) ETCH_BANKED
 {
     uint8_t i, n = 0;

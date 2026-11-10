@@ -140,7 +140,14 @@ typedef struct {
     uint8_t   mutes;             /* bit0 bass, bit1..4 lanes               */
     uint8_t   start_pattern;
     pattern_t pat[NUM_PATTERNS];
+    /* drum voicing per lane (SYNTH screen); added in save format v2 */
+    uint8_t   drum_tune[NUM_LANES];    /* 0..15, 8 = as designed */
+    uint8_t   drum_decay[NUM_LANES];   /* 0..15, 8 = as designed */
+    uint8_t   drum_level[NUM_LANES];   /* 0..15, 15 = full       */
 } project_t;
+#define PROJECT_V1_SIZE (sizeof(project_t) - 3 * NUM_LANES)
+
+void project_drum_defaults(project_t *p) ETCH_BANKED;
 
 /* ---- portable pattern helpers (src/generator/pattern.c) ---------------- */
 void pattern_clear(pattern_t *p) ETCH_BANKED;

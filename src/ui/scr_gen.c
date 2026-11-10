@@ -2,10 +2,12 @@
  * ETCH -- A Generative Acid Machine -- by Synth Centric
  * GEN: the CORROSION generative system.
  *
- *   KEY .. MODE     LEFT/RIGHT or B+UP/DOWN adjust
- *   SEED            B+UP/DOWN +-1, B+LEFT/RIGHT +-256, A = new seed + generate
- *   CODE            LEFT/RIGHT pick a digit, B+UP/DOWN change it
- *   action rows     LEFT/RIGHT pick, A executes
+ *   KEY .. MODE     </> or A+</> adjust, A+UP/DOWN coarse
+ *   SEED            A+</> +-1, A+UP/DOWN +-256, A (tap) = new seed + generate
+ *   CODE            </> pick a digit, A+DPAD change it
+ *   action rows     </> pick, A executes:
+ *                   GEN ALL | GEN BASS, GEN DRUMS | GROOVE (style's groove),
+ *                   EVOLVE | UNDO, LOCK BASS | LOCK PATT
  */
 #pragma bank 255
 #include <gbdk/platform.h>
@@ -28,15 +30,17 @@
 #define R_ACT1 12
 #define R_ACT2 13
 #define R_ACT3 14
-#define N_ROWS 15
+#define R_ACT4 15
+#define N_ROWS 16
 
 static const char * const lbl[R_CODE + 1] = {
     "KEY    ", "SCALE  ", "STYLE  ", "OCTAVE ", "DENSITY", "SYNCOP ",
     "ACCENT ", "SLIDE  ", "MUTATE ", "MODE   ", "SEED   ", "CODE   "
 };
 static const char * const key_n[12] = { "C ", "C#", "D ", "D#", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B " };
-static const char * const act_n[3][2] = {
+static const char * const act_n[4][2] = {
     { "GEN ALL  ", "GEN BASS " },
+    { "GEN DRUMS", "GROOVE   " },
     { "EVOLVE   ", "UNDO     " },
     { "LOCK BASS", "LOCK PATT" },
 };
@@ -92,12 +96,12 @@ static void draw_row(uint8_t r)
         ui_put(17, y, '-' - 32);
         break;
     }
-    case R_ACT1: case R_ACT2: case R_ACT3: {
+    case R_ACT1: case R_ACT2: case R_ACT3: case R_ACT4: {
         uint8_t a = (uint8_t)(r - R_ACT1), i;
         for (i = 0; i < 2; i++) {
             uint8_t x = (uint8_t)(i * 10);
             ui_textn(x, y, act_n[a][i], 10);
-            if (a == 2) {
+            if (a == 3) {
                 uint8_t on = i == 0 ? (p->lock & PLOCK_BASS) : (p->lock & PLOCK_ALL);
                 ui_put((uint8_t)(x + 9), y, on ? T_LOCK : T_DOT);
             }
@@ -114,21 +118,12 @@ static void draw_row(uint8_t r)
     }
 }
 
-static void draw_info(void)
-{
-    const pattern_t *p = &proj.pat[seq_cur];
-    ui_text(0, 17, "GEN");
-    ui_num0(4, 17, p->gen, 3);
-    ui_text(8, 17, evo_state == EVO_READY ? "NEXT:READY  " : (proj.gen.mode == EVO_STABLE ? "NEXT:-      " : "NEXT:...    "));
-}
-
 static void draw_all(void)
 {
     uint8_t r;
     ui_cls();
     ui_header("GEN");
     for (r = 0; r < N_ROWS; r++) draw_row(r);
-    draw_info();
     last_pat = seq_cur;
     last_commits = evo_commits;
 }
@@ -175,47 +170,57 @@ static void code_digit(uint8_t i, int8_t d)
 
 void scr_gen_frame(void) BANKED
 {
-    uint8_t old = cur, oldc = col, r;
+    uint8_t old = cur, oldc = col, r, nav;
     int8_t d = 0;
+    pattern_t *p = &proj.pat[seq_cur];
 
     if (seq_cur != last_pat || evo_commits != last_commits) draw_all();
 
-    if (!(key_held & J_SELECT)) {
-        if (key_held & J_B) {
-            d = ui_adjust(cur == R_SEED ? 2 : 4);
-        } else {
-            if (key_repeat & J_UP) cur = cur ? (uint8_t)(cur - 1) : (uint8_t)(N_ROWS - 1);
-            if (key_repeat & J_DOWN) cur = (uint8_t)((cur + 1) % N_ROWS);
-            if (key_repeat & (J_LEFT | J_RIGHT)) {
-                int8_t dir = (key_repeat & J_RIGHT) ? 1 : -1;
-                if (cur == R_CODE) col = (uint8_t)((col + 12 + dir) % 12);
-                else if (cur >= R_ACT1) col = (uint8_t)(col ^ 1);
-                else if (cur != R_SEED) d = dir;
-            }
-            if (key_pressed & J_A) {
-                pattern_t *p = &proj.pat[seq_cur];
-                if (cur == R_SEED) {
-                    proj.gen.seed = (uint16_t)((proj.gen.seed * 25173u + 13849u) ^ ((uint16_t)DIV_REG << 8) ^ sys_time);
-                    generate(GEN_ALL);
-                } else if (cur == R_ACT1) {
-                    generate(col ? GEN_BASS : GEN_ALL);
-                } else if (cur == R_ACT2) {
-                    if (col) app_undo(); else app_evolve_now();
-                } else if (cur == R_ACT3) {
-                    p->lock ^= col ? PLOCK_ALL : PLOCK_BASS;
-                    app_pattern_edited();
-                    ui_msg(col ? ((p->lock & PLOCK_ALL) ? "PATTERN LOCKED" : "PATTERN UNLOCKED")
-                               : ((p->lock & PLOCK_BASS) ? "BASS LOCKED" : "BASS UNLOCKED"));
-                }
-                draw_all();
-            }
-        }
+    nav = ui_nav();
+    if (nav & J_UP) cur = cur ? (uint8_t)(cur - 1) : (uint8_t)(N_ROWS - 1);
+    if (nav & J_DOWN) cur = (uint8_t)((cur + 1) % N_ROWS);
+    if (nav & (J_LEFT | J_RIGHT)) {
+        int8_t dir = (nav & J_RIGHT) ? 1 : -1;
+        if (cur == R_CODE) col = (uint8_t)((col + 12 + dir) % 12);
+        else if (cur >= R_ACT1) col = (uint8_t)(col ^ 1);
+        else if (cur != R_SEED) d = dir;            /* plain </> adjusts */
     }
+    if (!d) d = ui_edit(cur == R_SEED ? 16 : 4);
+
+    if (cur == R_SEED && ui_a_tap()) {
+        proj.gen.seed = (uint16_t)((proj.gen.seed * 25173u + 13849u) ^ ((uint16_t)DIV_REG << 8) ^ sys_time);
+        generate(GEN_ALL);
+        draw_all();
+    } else if (cur >= R_ACT1 && ui_a_press()) {
+        ui_a_consume();
+        if (cur == R_ACT1) {
+            generate(col ? GEN_BASS : GEN_ALL);
+        } else if (cur == R_ACT2) {
+            seq_backup_for_undo(seq_cur);
+            if (col) {
+                corr_drum_preset(p, proj.gen.style);
+                ui_msg("GROOVE LOADED");
+            } else {
+                corr_generate(p, &proj.gen, GEN_DRUMS);
+                ui_msg("GENERATED DRUMS");
+            }
+            app_pattern_edited();
+        } else if (cur == R_ACT3) {
+            if (col) app_undo(); else app_evolve_now();
+        } else {
+            p->lock ^= col ? PLOCK_ALL : PLOCK_BASS;
+            app_pattern_edited();
+            ui_msg(col ? ((p->lock & PLOCK_ALL) ? "PATTERN LOCKED" : "PATTERN UNLOCKED")
+                       : ((p->lock & PLOCK_BASS) ? "BASS LOCKED" : "BASS UNLOCKED"));
+        }
+        draw_all();
+    }
+    if (ui_clear() && cur == R_SEED) { proj.gen.seed = 0x2601; d = 0; for (r = 0; r <= R_CODE; r++) draw_row(r); }
     if (cur >= R_ACT1 && old < R_ACT1) col = 0;
     if (cur == R_CODE && old != R_CODE) col = 0;
     if (d) {
         if (cur == R_SEED) {
-            proj.gen.seed = (uint16_t)(proj.gen.seed + (d == 2 ? 256 : d == -2 ? -256 : d));
+            proj.gen.seed = (uint16_t)(proj.gen.seed + (d == 16 ? 256 : d == -16 ? -256 : d));
         } else if (cur == R_CODE) {
             code_digit(col, d);
         } else if (cur <= R_MODE) {
@@ -229,5 +234,4 @@ void scr_gen_frame(void) BANKED
         draw_row(old);
         draw_row(cur);
     }
-    draw_info();
 }

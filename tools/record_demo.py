@@ -28,7 +28,8 @@ def sel(e, d):
 
 def load_track(e, t, cur_row):
     """From LIVE: go to SAVE, move to track row, A A, back to LIVE."""
-    sel(e, "left")                      # LIVE -> SAVE
+    for _ in range(3):
+        sel(e, "right")                 # LIVE -> GEN -> SONG -> SAVE
     e.tick(10)
     target = 8 + t
     while cur_row < target:
@@ -36,7 +37,8 @@ def load_track(e, t, cur_row):
     while cur_row > target:
         e.press("up", hold=3, after=2); cur_row -= 1
     e.press("a", hold=3, after=3); e.press("a", hold=3, after=3)
-    sel(e, "right")                     # SAVE -> LIVE
+    for _ in range(3):
+        sel(e, "left")                  # SAVE -> LIVE
     return cur_row
 
 
