@@ -53,8 +53,23 @@ def main():
     e.tick(240)
     e.press("start")                    # title -> LIVE, track 1 plays
     e.wav_start(tmp)
-    # --- T1 FIRST CONTACT: play, open the filter, fill, close it again
-    e.tick(10 * SEC)
+    # --- T1 FIRST CONTACT: program on LIVE, open the filter, fill, close it
+    e.tick(8 * SEC)
+    e.press("down", hold=3, after=2)          # BS -> KK row (cursor on step 1)
+    for _ in range(2):
+        e.press("right", hold=3, after=2)     # step 3
+    e.press("a")                              # extra kick
+    for _ in range(8):
+        e.press("right", hold=3, after=2)     # step 11
+    e.press("a")                              # another kick
+    e.tick(4 * SEC)
+    e.press("up", hold=3, after=2)           # BS row, step 11 (a rest)
+    e.press("a", hold=3, after=2)             # add a note (last note: A2)
+    e.hold("a")
+    for _ in range(3):
+        e.press("right", hold=3, after=3)     # A+RIGHT x3 -> C3
+    e.release("a")
+    e.tick(6 * SEC)
     for _ in range(5):
         e.press("down", hold=3, after=2)    # cursor to CUT
     sweep(e, "right", 90)                    # cutoff up
@@ -75,7 +90,16 @@ def main():
     e.tick(22 * SEC)
     # --- T6 WAREHOUSE: drive harder, evolve on demand
     row = load_track(e, 5, row)
-    e.tick(10 * SEC)
+    e.tick(8 * SEC)
+    sel(e, "left"); sel(e, "left")            # LIVE -> TRACK -> SYNTH
+    e.hold("b"); e.press("right", hold=3, after=3); e.release("b")   # KCK page
+    e.press("down", hold=3, after=2)         # TUNE
+    e.hold("a")
+    for _ in range(3):
+        e.press("left", hold=3, after=3)      # deeper kick
+    e.release("a")
+    sel(e, "right"); sel(e, "right")          # back to LIVE
+    e.tick(4 * SEC)
     for _ in range(5):
         e.press("down", hold=3, after=2)     # CUT -> DRV (LIVE keeps its cursor)
     e.press("right", hold=3, after=2)        # SOFT -> HARD

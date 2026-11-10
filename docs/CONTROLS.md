@@ -3,118 +3,152 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
-ETCH uses only the Game Boy's D-pad, A, B, START and SELECT. Three rules cover almost everything:
+ETCH uses only the Game Boy's D-pad, A, B, START and SELECT.
 
-- **START** always starts or stops the music.
-- **SELECT + a button** is a global command. It works on every screen.
-- **Hold B + D-pad** changes the value under the cursor (UP/DOWN = fine, LEFT/RIGHT = coarse).
+## The screen row
 
-## Global (every screen)
+The screens sit side by side in one row, with **LIVE** as home:
+
+```
+ SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  SAVE
+```
+
+- **SELECT + LEFT / RIGHT** moves along the row. It stops at the ends; it does not wrap.
+- From LIVE, SELECT+LEFT opens the step editor (TRACK), and SELECT+LEFT again opens the sound engine (SYNTH). SELECT+RIGHT takes you back.
+- The arrows either side of the screen name in the header show which way you can go.
+- Each move briefly shows the neighbouring screens on line 2.
+
+## The editing grammar (every screen)
+
+The same buttons do the same kinds of things everywhere. The idea is borrowed from trackers.
+
+| Buttons | Meaning |
+|---|---|
+| D-pad | Move the cursor |
+| **A** (tap) | Place / toggle / do. On an empty step, A writes something; on a filled step, A changes it. |
+| **A held + LEFT / RIGHT** | Value −1 / +1 (semitone for notes) |
+| **A held + UP / DOWN** | Value up / down by a big step (octave for notes) |
+| **B + A** | Delete, or put back to default |
+| **B + D-pad** | Jump: a beat in TRACK, a channel in SYNTH |
+
+On list screens (the LIVE macros, SYNTH, GEN, SONG), plain LEFT/RIGHT also changes the value, so you can sweep a control without holding A.
+
+## Global
 
 | Buttons | Action |
 |---|---|
 | START | Play / stop |
-| SELECT + RIGHT | Next screen (LIVE → GRID → DRUM → SYNTH → GEN → CHAIN → SAVE → LIVE) |
-| SELECT + LEFT | Previous screen |
-| SELECT + UP | Queue the next pattern. It switches at the next bar line, and immediately if stopped. This also turns song mode off. |
-| SELECT + DOWN | Queue the previous pattern |
-| SELECT + A | **Evolve now**: CORROSION mutates the current pattern at the next bar line, or immediately if stopped. In STABLE mode it uses a DRIFT-strength mutation. |
-| SELECT + B | **Undo** the last evolution or generation (one level) |
+| SELECT + LEFT / RIGHT | Previous / next screen |
+| SELECT + UP / DOWN | Queue the next / previous pattern. It switches at the bar line, and immediately if stopped. Song mode turns off. |
+| SELECT + A | **Evolve now**: CORROSION mutates the pattern at the next bar line. In STABLE mode it uses a DRIFT-sized mutation. |
+| SELECT + B | **Undo** the last evolution, generation, groove load or clear (one level) |
 
-D-pad directions auto-repeat when held: after about 0.3 s, then every 4 frames.
+## LIVE — home: overview, step entry, performance
 
-## Title screen
+```
+    ▼ .   .   .        playhead
+BS ■□■■□□■□■■□■■□□■ ◄  bass        (cursor row marked on the right)
+KK ■□□□■□□□■□□□■□□□    kick
+SN □□□□■□□□□□□□■□□□    snare
+CH □□■□□□■□□□■□□□■□    closed hat
+OH □□□□□□□□□□□□□□■□    open hat / perc
+CUT ███████      7     macros ...
+```
+
+| Where | Buttons | Action |
+|---|---|---|
+| anywhere | D-pad | Move. LEFT of step 1 is the lane name. |
+| lane name | A | Mute / unmute the lane (✕ = muted) |
+| bass step | A | Empty step: add a note (the last note you used). Note: tap A to remove it. |
+| bass step | A + LEFT / RIGHT | Semitone down / up (the note sounds when stopped) |
+| bass step | A + UP / DOWN | Octave up / down |
+| bass step | B + A | Remove |
+| drum step | A | Hit on / off |
+| drum step | B + A | Remove |
+| macro row | LEFT / RIGHT | Adjust; hold to sweep |
+| macro row | A + UP / DOWN | Adjust coarse (BPM ±10) |
+| macro row | A (tap) | **FILL**: a drum fill until the bar line, or through the next bar if late in the bar |
+
+Macros: CUT, RES, ENV, DEC, ACC, DRV, BPM, EVO (mode), MUT (mutation intensity). The bottom line always says what A does where the cursor is.
+
+## TRACK — tracker step editor
+
+One row per 16th step (0–F), with every channel in view:
+
+```
+ # NOT ASL KSHO P CD
+►0 A-1 A.. K... 8 --
+ 1 --- ... ..H. 8 --
+ 2 === ... .... 8 12
+```
+
+| Column | Buttons | Action |
+|---|---|---|
+| NOT | A | Empty step: write the last note |
+| NOT | A tap on a note | Turn it into a **tie** (`===`, holds the note above). Tap again: back to a note. |
+| NOT | A + LEFT / RIGHT | Semitone down / up |
+| NOT | A + UP / DOWN | Octave up / down |
+| NOT | B + A | Delete (rest) |
+| A S L | A | Accent / slide / step lock on/off. B+A clears. |
+| K S H O | A | Kick / snare / closed hat / open hat hit on/off. B+A clears. |
+| P | A + D-pad | Chance 1–8 (8 = always). B+A sets 8. |
+| CD | A + D-pad | Condition: `--` always, `12` `22` (1st/2nd of every 2 loops), `14` `24` `34` `44` (of every 4), `FI` only in fills, `NF` never in fills. B+A sets `--`. |
+| any | B + UP / DOWN | Jump a beat (4 rows) |
+| any | B + LEFT / RIGHT | Previous / next pattern |
+
+Moving to a new column shows a one-line hint for it.
+
+## SYNTH — one page per channel
+
+The top row holds the channel tabs: **BAS** (acid bass) · **KCK** · **SNR** · **HAT** · **OPN**.
 
 | Buttons | Action |
 |---|---|
-| START | Enter the instrument. The first track starts playing at once. |
+| B + LEFT / RIGHT | Previous / next channel (from any row) |
+| UP / DOWN | Select a row. Above the first row is the tab row, where LEFT/RIGHT also changes channel. |
+| LEFT / RIGHT, or A + LEFT / RIGHT | Adjust by 1 |
+| A + UP / DOWN | Adjust coarse |
+| B + A | Back to the default value |
+| A (tap) | Hear the channel |
 
-## LIVE — performance
+**BAS page:** WAVE, CUTOFF, RESO, ENVMOD, DECAY, ACCENT, DRIVE, SLIDE, GATE, LFO RT, LFO DP, LFO TO, LFO SH, TUNE. A live scope shows the waveform being played.
 
-| Buttons | Action |
+**Drum pages:**
+
+| Row | Meaning |
 |---|---|
-| UP / DOWN | Select a lane row (BS KK SN CH OH) or a macro row |
-| LEFT / RIGHT on a lane | Mute / unmute that lane |
-| LEFT / RIGHT on a macro | Adjust by 1. Hold to sweep. |
-| B + LEFT / RIGHT on a macro | Coarse adjust (±4; BPM ±10) |
-| A | **FILL**: a drum fill until the next bar line. If triggered in the last quarter of the bar, it also covers the following bar. |
-
-Macros: CUT (cutoff), RES (resonance), ENV (envelope depth), DEC (decay), ACC (accent), DRV (drive), BPM, EVO (evolution mode), MUT (mutation intensity).
-
-## GRID — bass steps
-
-Each row is one step. The columns are: playhead, step number, NOTE, A(ccent), S(lide), P(robability), CND (condition), L(ock).
-
-| Buttons | Action |
-|---|---|
-| UP / DOWN | Select step |
-| LEFT / RIGHT | Select field |
-| A on NOTE | Cycle REST → NOTE → TIE → REST |
-| B + UP / DOWN on NOTE | Semitone up / down. A rest becomes a note. The note auditions when stopped. |
-| B + LEFT / RIGHT on NOTE | Octave down / up |
-| A on A / S / L | Toggle accent / slide / step lock |
-| B + UP / DOWN on A / S / L | Set (UP) or clear (DOWN) |
-| B + UP / DOWN on P | Probability 1–8 (8 = always) |
-| A on P | Reset to 8 (always) |
-| B + UP / DOWN on CND | Cycle condition: ALL 1:2 2:2 1:4 2:4 3:4 4:4 FIL !FL |
-| A on CND | Reset to ALL |
-
-## DRUM — percussion
-
-| Buttons | Action |
-|---|---|
-| D-pad in the grid | Move the cursor (4 lanes × 16 steps) |
-| A in the grid | Toggle a hit (auditions when stopped) |
-| LEFT / RIGHT on a lane settings row | Choose the KIT, MUTE or LOCK field |
-| B + UP / DOWN on KIT | Change the lane's sound (auditions) |
-| A on KIT | Audition |
-| A on MUTE / LOCK | Toggle |
-| B + UP / DOWN on GROOVE | Choose ACID HOUSE / ELECTRO / MINIMAL / BROKEN / INDUSTRIAL / SPARSE |
-| A on GROOVE | Apply that groove to all unlocked lanes (undoable) |
-| A on GENERATE DRUMS | Generate drums from the GEN settings (undoable) |
-| A on CLEAR DRUMS | Clear unlocked lanes (undoable) |
-
-## SYNTH — acid voice
-
-| Buttons | Action |
-|---|---|
-| UP / DOWN | Select parameter |
-| LEFT / RIGHT, or B + UP / DOWN | Adjust by 1 |
-| B + LEFT / RIGHT | Coarse adjust (±4; BPM ±10; TUNE ±12) |
-| A | Audition (when stopped) |
+| SOUND | The lane's sound in the current pattern (P01 …) |
+| TUNE | Pitch, −8 to +7 |
+| DECAY | Length, 0–15 (8 = as designed) |
+| LEVEL | Volume, 0–15 |
+| MUTE | A toggles |
+| LOCK | A toggles; protects the lane in this pattern from CORROSION |
 
 ## GEN — CORROSION
 
-| Buttons | Action |
+| Row | Buttons |
 |---|---|
-| UP / DOWN | Select row |
-| LEFT / RIGHT, or B + UP / DOWN | Adjust KEY … MODE |
-| B + UP / DOWN on SEED | Seed ±1 |
-| B + LEFT / RIGHT on SEED | Seed ±256 |
-| A on SEED | New random seed, then generate bass and drums |
-| LEFT / RIGHT on CODE | Select a digit of the 12-digit seed code |
-| B + UP / DOWN on CODE | Change that digit. This edits the parameter it encodes. |
-| LEFT / RIGHT on an action row | Choose the left or right action |
-| A on an action row | GEN ALL · GEN BASS · EVOLVE · UNDO · LOCK BASS · LOCK PATT |
+| KEY … MODE | LEFT/RIGHT or A+D-pad adjusts |
+| SEED | A+LEFT/RIGHT ±1, A+UP/DOWN ±256. **A tap: new random seed + generate.** B+A: reset the seed. |
+| CODE | LEFT/RIGHT picks a digit, A+D-pad changes it |
+| actions | LEFT/RIGHT picks, A runs: **GEN ALL · GEN BASS**, **GEN DRUMS · GROOVE** (loads the STYLE's drum groove), **EVOLVE · UNDO**, **LOCK BASS · LOCK PATT** |
 
-## CHAIN — song
+## SONG — tempo and arrangement
 
-| Buttons | Action |
+| Row | Buttons |
 |---|---|
-| D-pad | Move between SONG, the 16 slots (2 columns), COPY and CLEAR |
-| A on SONG | Song mode on / off |
-| B + UP / DOWN on a slot | Pattern P01–P32 or END |
-| B + LEFT / RIGHT on a slot | Bars 1–8 |
-| A on a slot | Song mode: jump there at the next bar. Loop mode: queue that pattern. |
-| B + UP / DOWN on COPY | Choose the destination pattern |
-| A on COPY | Copy the current pattern to the destination |
-| A, A on CLEAR | Clear the current pattern (undoable) |
+| SONG MODE | A toggles: ON = follow the chain, OFF = loop the current pattern |
+| BPM | LEFT/RIGHT ±1, A+UP/DOWN ±10 |
+| SWING | LEFT/RIGHT, 0–8 |
+| chain slot | LEFT/RIGHT switches column. A+LEFT/RIGHT sets the pattern (or END). A+UP/DOWN sets bars 1–8. **A tap jumps there at the next bar** (in loop mode, queues the pattern). B+A sets END. |
+| COPY | A+D-pad chooses the destination; A copies the current pattern |
+| CLEAR | A, A clears the current pattern (undoable) |
 
-## SAVE — storage and tracks
+## SAVE — slots and the album
 
 | Buttons | Action |
 |---|---|
-| UP / DOWN | Select slot S1–S8 or track T1–T8 |
-| LEFT / RIGHT on a slot | Action: LOAD / SAVE / ERAS(e) |
-| A | Arm the action. Press A again to confirm. Saving to an empty slot is immediate. |
-| A, A on a track | Load that ROM track (replaces the working project) |
+| UP / DOWN | Slot S1–S8 or track T1–T8 |
+| LEFT / RIGHT | Slot action: LOAD / SAVE / ERAS |
+| A | Arm. Press A again to confirm. Saving to an empty slot is immediate. |
+| A, A on a track | Load that ROM track |

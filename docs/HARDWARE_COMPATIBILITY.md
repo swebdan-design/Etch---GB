@@ -53,9 +53,9 @@ Never-written SRAM (random or `$FF`) is handled safely: slots show `--empty--`. 
 
 | Area | Use |
 |---|---|
-| ROM bank 0 | GBDK runtime, timer ISR, audio engine, drums, sequencer, UI core, name tables, engine lookup tables (12.4 KB used) |
+| ROM bank 0 | GBDK runtime, timer ISR, audio engine, drums, sequencer, UI core, name tables, engine lookup tables (13.9 KB used) |
 | ROM bank 1 | Wavetables `[osc 4][res 8][cut 32][16]`: exactly 16 384 bytes |
 | ROM banks 2–4 | Transfer LUTs (6 KB), CORROSION, UI screens, graphics, ROM tracks, storage (autobanked) |
 | ROM banks 5–7 | Free (about 49 KB) |
-| WRAM | Working project 2 121 bytes (32 patterns × 64 bytes + 73-byte header), undo, candidate and anchor patterns, 360-byte shadow tile map; 3.2 KB of 4 KB used in WRAM0 |
+| WRAM | Working project 2 133 bytes (73-byte header + 32 patterns × 64 bytes + 12 bytes of drum voicing), undo, candidate and anchor patterns, voiced drum table, 360-byte shadow tile map; 3.4 KB of 4 KB used in WRAM0 |
 | SRAM | 8 slots × 4 KB (2 per bank) + a metadata block in bank 3 |

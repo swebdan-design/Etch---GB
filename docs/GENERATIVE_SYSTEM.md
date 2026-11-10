@@ -26,6 +26,8 @@ All of CORROSION is portable C (`src/generator/corrosion.c`, `pattern.c`). It is
 | SLIDE | 0–15 | Slide probability (scaled by the style's slide habit) |
 | MUTATE | 0–15 | Mutation budget per evolution |
 | MODE | STABLE, DRIFT, CORRODE | Evolution behaviour |
+
+The GEN screen also has the actions GEN ALL, GEN BASS, GEN DRUMS, GROOVE (loads the STYLE's drum template), EVOLVE, UNDO, LOCK BASS and LOCK PATT.
 | SEED | 0000–FFFF | Random seed for generation |
 
 ## 2. Composition (GENERATE)
@@ -130,7 +132,7 @@ The riff transforms (A–E → A–D–E → A–C–E with moving accents) with
 
 ### Locks and undo guarantees
 
-- **Step lock (GRID L), lane lock (DRUM), bass lock and pattern lock (GEN):** after every mutation, all locked material is copied back from the source bit-for-bit. Host tests ran 8 000 mutations with step and lane locks set: zero violations, zero invalid patterns. The emulator test checks a locked step and the locked kick lane on the real ROM.
+- **Step lock (TRACK, L column), lane lock (SYNTH drum page, LOCK), bass lock and pattern lock (GEN):** after every mutation, all locked material is copied back from the source bit-for-bit. Host tests ran 8 000 mutations with step and lane locks set: zero violations, zero invalid patterns. The emulator test checks a locked step and the locked kick lane on the real ROM.
 - **Undo:** one generation deep. The undo buffer is written only at the moment a mutation (or GENERATE, groove, clear) actually commits.
 
 ## 4. Fills

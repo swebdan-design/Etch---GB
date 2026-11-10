@@ -465,6 +465,38 @@ def main():
     rec("corrupted slot refused, project untouched", et.pb(SYNTH + S_CUT)[0] == cut_before)
     et.stop()
 
+    # an ETCH 1.0 (save format v1, no drum voicing) slot must still load
+    def fletcher(bs):
+        a = b = 0
+        for x in bs:
+            a += x; a = (a & 255) + (a >> 8)
+            b += a; b = (b & 255) + (b >> 8)
+        a = 0 if a == 255 else a
+        b = 0 if b == 255 else b
+        return a | b << 8
+    data = bytearray(open(bat, "rb").read())
+    base = 8192 * 1                      # slot S3 = bank 1, offset 0
+    size_v2 = data[base + 6] | data[base + 7] << 8
+    size_v1 = size_v2 - 12
+    data[base + 4] = 1
+    data[base + 6] = size_v1 & 255; data[base + 7] = size_v1 >> 8
+    sm = fletcher(data[base + 10: base + 10 + size_v1])
+    data[base + 8] = sm & 255; data[base + 9] = sm >> 8
+    v1 = bat + ".v1"
+    open(v1, "wb").write(data)
+    et = Etch(rom, v1)
+    et.boot_to_live()
+    et.pset(PAT + 64 * 32, 3)            # scribble on drum tune: load must reset it
+    to_save(et)
+    txt = "\n".join(et.e.screen_text())
+    rec("v1 (ETCH 1.0) slot is recognised", "CONTACT" in txt and "CORRUPT" not in txt)
+    et.e.press("down"); et.e.press("down"); et.e.press("left")
+    et.e.press("a"); et.e.press("a"); et.e.tick(20)
+    rec("v1 slot loads with default drum voicing",
+        et.pb(SYNTH + S_BPM)[0] == 141 and list(et.pb(PAT + 64 * 32, 12)) == [8] * 8 + [15] * 4,
+        "bpm=%d voicing=%s" % (et.pb(SYNTH + S_BPM)[0], list(et.pb(PAT + 64 * 32, 12))))
+    et.stop()
+
     # ---- every ROM track loads through the UI and plays ----------------------
     et = Etch(rom)
     et.boot_to_live()

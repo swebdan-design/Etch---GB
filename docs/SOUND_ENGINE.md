@@ -132,6 +132,18 @@ The LFO is free-running. The depth scaling is a generated signed table.
 | CH | CLOSED / TICK / SHAKE / SHARP | CH4 with the hardware length counter for short hats. TICK uses the 7-bit LFSR (metallic). |
 | OH | OPEN / METAL / BLIP / CRASH | CH4 long envelopes (METAL: 7-bit LFSR); BLIP is a CH2 tonal percussion hit |
 
+### Per-lane voicing (SYNTH → KCK / SNR / HAT / OPN)
+
+Each lane has **TUNE**, **DECAY** and **LEVEL** (project-wide; save format v2):
+
+| Control | Tone parts | Noise parts |
+|---|---|---|
+| TUNE (−8…+7) | Start and end periods shift by `(tune−8) × 2ⁿ` (n = 5 kick, 4 snare body, 3 tonal perc) | Noise clock shift −(tune−8)/2: higher tune gives a brighter hiss |
+| DECAY (0–15) | Hardware envelope pace ±4 | Envelope pace ±4 and length counter ±8 (closed hats) |
+| LEVEL (0–15) | Initial envelope volume × (level+1)/16 | same |
+
+The voiced register values for all 16 sounds are recomputed in the main loop whenever a voicing value changes (`drums_revoice`). Triggering a drum therefore costs the timer interrupt nothing extra.
+
 ## 10. Differences from GB-303
 
 ETCH studied furrtek's GB-303 (CC BY 4.0) to understand what the hardware allows; see `THIRD_PARTY_NOTICES.md`. Both instruments select pre-rendered wave-RAM tables and pass bytes through distortion LUTs. ETCH's implementation is otherwise independent:

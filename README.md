@@ -6,7 +6,15 @@ ETCH is an acid bass synthesizer, four-lane drum machine, 16-step sequencer and 
 
 Switch on, press START, and acid plays. From there you can perform it, reshape it, let it rewrite itself, and save your version.
 
-![LIVE screen](docs/images/screen_live.png) ![SYNTH screen](docs/images/screen_synth.png) ![GEN screen](docs/images/screen_gen.png)
+![SYNTH](docs/images/screen_synth.png) ![TRACK](docs/images/screen_track.png) ![LIVE](docs/images/screen_live.png)
+
+```
+ SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  SAVE      (SELECT + LEFT/RIGHT)
+```
+
+LIVE is home: watch, play and program the pattern. SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG) and storage (SAVE).
+
+Editing works the same everywhere: **A** places or toggles, **A + D-pad** changes values, **B + A** deletes.
 
 | | |
 |---|---|
@@ -61,7 +69,7 @@ make emutest
 
 - `make hosttest` runs the CORROSION unit tests on the host (32 checks).
 - `tests/sameboy/build.sh` builds the optional emulator harness. Point it at a SameBoy checkout that has run `make lib bootroms`; RGBDS is needed for the boot ROMs.
-- `make emutest` runs the 52 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
+- `make emutest` runs the 77 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
 
 `tests/profile.py` gives a per-function CPU profile of the ROM. `tools/record_demo.py` re-records the demo WAV.
 

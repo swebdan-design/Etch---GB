@@ -3,12 +3,38 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
+## Version 1.1 (2026-11-10)
+
+- ROM SHA-256: `5f54596038f2dc81caf5dad5545cb2b13bc4e184583b1f092e2e5aebfc147c59`
+
+An interface redesign. The sound, sequencer and generator are unchanged apart from the new drum voicing.
+
+- **LIVE is home**, and you can now program on it. Move onto any lane step:
+  - A adds or removes a drum hit or bass note.
+  - A+D-pad changes the pitch (semitone / octave).
+  - A on a lane name mutes it.
+  - A on a macro row plays a fill.
+  - A help line at the bottom explains the cursor.
+- **One screen row**, `SYNTH ◄ TRACK ◄ LIVE ► GEN ► SONG ► SAVE`. SELECT+LEFT/RIGHT moves along it and stops at the ends. The header arrows show the neighbours, and each move flashes a small map.
+- **TRACK**: a new tracker-style editor. One row per step (0–F) with bass note, accent/slide/lock, kick/snare/hat/open-hat, chance and condition columns. It replaces the GRID and DRUM screens.
+- **SYNTH has a page per channel** (BAS, KCK, SNR, HAT, OPN). The drum pages have new **TUNE / DECAY / LEVEL** voicing plus SOUND, MUTE and LOCK. B+LEFT/RIGHT flips pages.
+- **One editing grammar on every screen**, inspired by trackers:
+  - A places or toggles.
+  - A held + D-pad changes a value.
+  - B+A deletes or resets.
+  - B+D-pad jumps.
+
+  Previously values changed with B+D-pad.
+- **SONG** (formerly CHAIN) now also holds BPM and SWING.
+- **GEN** gains GEN DRUMS and GROOVE (formerly on the DRUM screen).
+- **Save format v2** adds the drum voicing. Slots saved by 1.0 still load, with default voicing.
+
 ## Version 1.0 (2026-11-10)
 
 First release.
 
 - ROM: `ETCH_by_Synth_Centric.gb`, 128 KB, MBC5+RAM+BATTERY, 32 KB SRAM.
-- SHA-256: `8b1bd739c97d7a9d72288d5c07f5f107061e7a08c004ab567eebeacfd0afbf7f`
+- SHA-256 (1.0): `8b1bd739c97d7a9d72288d5c07f5f107061e7a08c004ab567eebeacfd0afbf7f`
 
 ### What's in it
 
@@ -41,7 +67,7 @@ First release.
 - Step, lane, bass and pattern locks; one-level undo; evolve on demand.
 
 **Interface**
-- Screens: LIVE, GRID, DRUM, SYNTH (with a live waveform scope), GEN, CHAIN, SAVE.
+- Screens: LIVE, GRID, DRUM, SYNTH (with a live waveform scope), GEN, CHAIN, SAVE. (Reorganised in 1.1.)
 - Every function is reachable with D-pad, A, B, START and SELECT.
 - Input is latched in VBlank, so short taps are not lost.
 
@@ -72,7 +98,7 @@ START at power-on plays track 1.
 | Specified | Implemented | Why |
 |---|---|---|
 | Each pattern "contains synthesis information or references shared settings" | Synth settings are **shared by the whole project** (a song keeps one bass sound) | WRAM budget; one sound per track suits the album format. Use separate save slots for different sounds. |
-| A GRID screen with practical drum access | Drums have their own **DRUM** screen, next to GRID | 16 bass steps already fill the GRID screen |
+| A GRID screen with practical drum access | 1.0: a separate DRUM screen. 1.1: the TRACK tracker shows bass and all drum lanes on one page, and LIVE edits them too. | – |
 | Probability and conditions | Implemented for **bass steps only**. Drum lanes get variation from FILL and CORROSION instead. | Pattern size (64 bytes) |
 | Kick "sub" | The deepest kick bottoms out at **64 Hz**, the lowest frequency of the pulse channels | CH3, which could go lower, is reserved for the bass |
 | Smooth analogue filtering | Stepped wavetable selection, with a phase-reset grain during fast sweeps | DMG hardware limits (see `SOUND_ENGINE.md`) |

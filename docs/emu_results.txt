@@ -4,25 +4,48 @@ PASS  CGB flag 0x00 (DMG ROM, runs on CGB in DMG mode)
 PASS  title shows 'by Synth Centric' exactly  
 PASS  title logo + subtitle tiles drawn  
 PASS  title 'PRESS START' visible (blinks)  
-PASS  START on title -> LIVE screen  LIVE  P01S01 124#  #
+PASS  START on title -> LIVE screen  #LIVE #P01S01 124# #
 PASS  START on title starts playback immediately  
 PASS  tempo accuracy (124 BPM)  83 steps in 10.046s, expected 83.0
-PASS  worst-case timer ISR shorter than one tick (64 DIV)  53 DIV ticks = 13568 cycles
+PASS  worst-case timer ISR shorter than one tick (64 DIV)  54 DIV ticks = 13824 cycles
 PASS  audio output present during playback  rms=2875
-PASS  SELECT+RIGHT reaches GRID  GRID  P01S03 124#  #
-PASS  SELECT+RIGHT reaches DRUM  DRUM  P01S03 124#  #
-PASS  SELECT+RIGHT reaches SYNTH  SYNTH P01S03 124#  #
-PASS  SELECT+RIGHT reaches GEN  GEN   P01S03 124#  #
-PASS  SELECT+RIGHT reaches CHAIN  CHAIN P01S03 124# ##
-PASS  SELECT+RIGHT reaches SAVE  SAVE  P03S04 124# ##
-PASS  screen cycle wraps to LIVE  
+PASS  SELECT+LEFT from LIVE -> TRACK  #TRACK#P01S03 124# #
+PASS  TRACK shows column titles   # NOT ASL KSHO P CD
+PASS  SELECT+LEFT from TRACK -> SYNTH  
+PASS  SYNTH is the left end (no wrap)  
+PASS  SELECT+RIGHT from SYNTH -> TRACK  
+PASS  SELECT+RIGHT from TRACK -> LIVE  
+PASS  SELECT+RIGHT reaches GEN  #GEN  #P03S04 124# #
+PASS  SELECT+RIGHT reaches SONG  #SONG #P03S04 124# #
+PASS  SELECT+RIGHT reaches SAVE  #SAVE  P03S04 124# #
+PASS  SAVE is the right end (no wrap)  
+PASS  back to LIVE  
 PASS  playback continued through all screen changes  
-PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=2953Hz cut16=3388Hz cut31=3736Hz
-PASS  RESONANCE changes timbre  res0=3251Hz res7=3580Hz
+PASS  LIVE: A toggles a bass step  type 1 -> 0
+PASS  LIVE: A+RIGHT x2 +2 semitones, A+UP +1 octave  note 21 -> 35
+PASS  LIVE: B+A removes the bass step  
+PASS  LIVE: A toggles a drum hit  kick 1111 -> 1113
+PASS  LIVE: A on the lane name mutes the lane  
+PASS  LIVE: help line explains the cursor  KICK  ON     A:MUTE 
+PASS  TRACK: B+A clears a note to a rest  
+PASS  TRACK: A on an empty step writes a note  
+PASS  TRACK: A tap on a note turns it into a tie  
+PASS  TRACK: A+DOWN lowers an octave  
+PASS  TRACK: A in the K column toggles the kick  1111 -> 1131
+PASS  TRACK: A+LEFT lowers the step chance  
+PASS  TRACK: A+RIGHT sets a condition  
+PASS  TRACK: B+A resets the condition  
+PASS  SYNTH: B+RIGHT switches to the KICK page  
+PASS  SYNTH: A+RIGHT raises kick TUNE  tune=10
+PASS  SYNTH: drum LEVEL default full  
+PASS  SYNTH: B+A restores the default  
+PASS  back to LIVE after editing  
+PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=3245Hz cut16=3336Hz cut31=3755Hz
+PASS  RESONANCE changes timbre  res0=3261Hz res7=3589Hz
 PASS  bass pitch correct (C2 = 65.4 Hz)  measured 65.4 Hz
-PASS  SLIDE glides through intermediate pitches  20 distinct periods between C2 (1046) and C3 (1547)
-PASS  ACCENT audibly louder/brighter  step rms 1417 vs 970
-PASS  kick/snare/hat lanes produce sound  rms=2650
+PASS  SLIDE glides through intermediate pitches  19 distinct periods between C2 (1046) and C3 (1547)
+PASS  ACCENT audibly louder/brighter  step rms 1416 vs 969
+PASS  kick/snare/hat lanes produce sound  rms=2609
 PASS  bass + kick + snare + hat play simultaneously (CH1-4 active)  NR52 channel bits=F
 PASS  CORRODE commits mutations at phrase boundaries  3 commits in 30 s
 PASS  CORRODE changed the pattern  
@@ -39,16 +62,18 @@ PASS  slot persists across power cycle  ['S3*CONTACT          ']
 PASS  loaded project identical to saved project  cut=23 bpm=141
 PASS  corrupted slot detected (checksum)  
 PASS  corrupted slot refused, project untouched  
-PASS  track T1 CONTACT    loads and plays  name=CONTACT bpm=124 rms=2870
-PASS  track T2 CONCRETE   loads and plays  name=CONCRETE bpm=130 rms=2459
-PASS  track T3 STATIC     loads and plays  name=STATIC bpm=112 rms=1943
-PASS  track T4 CORROSION  loads and plays  name=CORROSION bpm=135 rms=3025
-PASS  track T5 NIGHTSHIFT loads and plays  name=NIGHTSHIFT bpm=104 rms=2603
-PASS  track T6 WAREHOUSE  loads and plays  name=WAREHOUSE bpm=128 rms=2982
-PASS  track T7 SIGNALLOSS loads and plays  name=SIGNALLOSS bpm=118 rms=2738
-PASS  track T8 AFTERIMAGE loads and plays  name=AFTERIMAGE bpm=120 rms=2537
+PASS  v1 (ETCH 1.0) slot is recognised  
+PASS  v1 slot loads with default drum voicing  bpm=141 voicing=[8, 8, 8, 8, 8, 8, 8, 8, 15, 15, 15, 15]
+PASS  track T1 CONTACT    loads and plays  name=CONTACT bpm=124 rms=2866
+PASS  track T2 CONCRETE   loads and plays  name=CONCRETE bpm=130 rms=2410
+PASS  track T3 STATIC     loads and plays  name=STATIC bpm=112 rms=1964
+PASS  track T4 CORROSION  loads and plays  name=CORROSION bpm=135 rms=3076
+PASS  track T5 NIGHTSHIFT loads and plays  name=NIGHTSHIFT bpm=104 rms=2727
+PASS  track T6 WAREHOUSE  loads and plays  name=WAREHOUSE bpm=128 rms=3015
+PASS  track T7 SIGNALLOSS loads and plays  name=SIGNALLOSS bpm=118 rms=2764
+PASS  track T8 AFTERIMAGE loads and plays  name=AFTERIMAGE bpm=120 rms=2626
 PASS  5-minute run: no timing drift  2492 steps in 301.4s (expected 2491.3)
 PASS  5-minute run: still playing, ISR within budget  isr max 57 DIV
 PASS  5-minute CORRODE run: all 32 patterns valid  
 
-52/52 passed
+77/77 passed

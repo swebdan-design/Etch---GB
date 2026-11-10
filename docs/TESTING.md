@@ -51,7 +51,7 @@ This report gives the result of every check that was actually run, and states cl
 
 ## 3. Emulator integration tests (`make emutest`, SameBoy DMG)
 
-**52 / 52 checks passed** on the release ROM (SHA-256 `8b1bd739c97d7a9d72288d5c07f5f107061e7a08c004ab567eebeacfd0afbf7f`). The raw results are in [`emu_results.txt`](emu_results.txt).
+**77 / 77 checks passed** on the release ROM, version 1.1 (SHA-256 `5f54596038f2dc81caf5dad5545cb2b13bc4e184583b1f092e2e5aebfc147c59`). The raw results are in [`emu_results.txt`](emu_results.txt).
 
 ### Boot and branding
 
@@ -65,7 +65,7 @@ This report gives the result of every check that was actually run, and states cl
 - 124 BPM: 83 steps in 10.046 s; theory gives 83.0.
 - 5-minute CORRODE run in song mode: 2 492 steps in 301.4 s against 2 491.3 expected. This is within one step's quantisation, so there is no cumulative drift.
 - A separate gap detector in the ISR recorded **zero late or missed timer ticks** over 3 × 30 s on different screens: 7 715 ticks counted against 7 715.0 expected each time.
-- Worst-case ISR: 53–57 DIV units (13.6k–14.6k cycles), below the 16.4k-cycle tick period.
+- Worst-case ISR: 54–57 DIV units (13.8k–14.6k cycles), below the 16.4k-cycle tick period. In 1.1, drum voicing is precomputed in the main loop. A first version computed it at trigger time and pushed the worst case to about 17.9k cycles; the test caught this and it was fixed.
 
 ### Audio (captured from the emulated APU)
 
@@ -80,10 +80,37 @@ This report gives the result of every check that was actually run, and states cl
 | Drums | Kick/snare/hat lanes produce sound (RMS 2 650) | PASS |
 | Simultaneity | All four channel-active bits (NR52) set together: bass + kick + snare body + noise | PASS |
 
-### Interface
+### Interface (1.1 layout)
 
-- SELECT+RIGHT reaches all seven screens in order and wraps around.
-- Playback continues through all screen changes.
+**Screen row.**
+- From LIVE, SELECT+LEFT goes to TRACK, and again to SYNTH.
+- SYNTH is the left end; SELECT+LEFT does not wrap.
+- SELECT+RIGHT returns to TRACK and then LIVE, and continues to GEN, SONG and SAVE.
+- SAVE is the right end; it does not wrap either.
+- TRACK shows its column titles.
+- Playback continues through every screen change.
+
+**LIVE step entry.**
+- A toggles a bass step.
+- A+RIGHT ×2 and A+UP raise the note by +2 semitones and +1 octave (21 → 35).
+- B+A removes the step.
+- A toggles a drum hit (kick mask 1111 → 1113).
+- A on the lane name mutes the lane.
+- The help line describes the cursor.
+
+**TRACK.**
+- B+A clears a note to a rest.
+- A on an empty step writes a note.
+- An A tap turns a note into a tie.
+- A+DOWN lowers the note an octave.
+- A in the K column toggles the kick.
+- A+LEFT lowers the chance; A+RIGHT sets a condition; B+A resets it.
+
+**SYNTH.**
+- B+RIGHT opens the KICK page.
+- A+RIGHT raises kick TUNE (8 → 10).
+- LEVEL defaults to 15.
+- B+A restores the default.
 
 ### CORROSION on the real ROM
 
@@ -101,6 +128,7 @@ This report gives the result of every check that was actually run, and states cl
 - The battery file was written, and the emulator restarted with it.
 - The slot was still present, and loading it gave a project **byte-identical** to the one saved (all 2 121 bytes).
 - With one data byte corrupted in the battery file, the slot shows `!CORRUPT!` and loading is refused without touching the working project.
+- **Backward compatibility:** a slot rewritten in the ETCH 1.0 format (version 1, no drum voicing, with its own valid checksum) is recognised and loads. Drum voicing is set to the defaults.
 
 ### Tracks
 
@@ -118,21 +146,21 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
 | PyBoy: boot, title (`by Synth Centric`), LIVE, playback, audio present | PASS (PyBoy's timer runs about 2 % slow; it is not used for timing) |
 | Main-loop responsiveness | About 47 iterations/s on LIVE in STABLE (worst 2 frames). In CORRODE, one iteration of up to 7 frames per phrase while a mutation is computed. Presses are latched in the VBlank ISR, so none are lost. |
 | CPU profile (`tests/profile.py`) | Audio ISR about 23 % of CPU on average |
-| Memory | ROM bank 0 76 %, banks 1–3 full, bank 4 43 %, banks 5–7 free; WRAM0 80 % |
-| Clean build | `make clean && make` succeeds (about 24 s) |
+| Memory | ROM bank 0 85 %, banks 1–3 nearly full, bank 4 56 %, banks 5–7 free; WRAM0 84 % |
+| Clean build | `make clean && make` succeeds (about 25 s) |
 | Source archive | `release/ETCH_Source.zip` extracted into an empty directory and built with GBDK-2020 4.3.0: **byte-identical ROM** (same SHA-256) |
 | Full regeneration | Deleting all generated data (wavetables, LUTs, engine tables, graphics, tracks) in the extracted copy and rebuilding regenerates identical files and an identical ROM |
-| Demo recording | `release/ETCH_Demo.wav` (125.7 s) captured from the release ROM in SameBoy while `tools/record_demo.py` pressed buttons; no clipping; continuous level throughout |
+| Demo recording | `release/ETCH_Demo.wav` (140.1 s) captured from the release ROM in SameBoy while `tools/record_demo.py` pressed buttons. Includes adding kicks and a bass note on LIVE, re-tuning the kick on SYNTH, filter sweeps, a fill, CORRODE evolution and an on-demand evolve. Continuous level throughout. |
 
 ## 5. Screenshots (genuine SameBoy captures)
 
-| Title | LIVE | GRID | DRUM |
+| Title | SYNTH (BAS) | SYNTH (KCK) | TRACK |
 |---|---|---|---|
-| ![](images/screen_title.png) | ![](images/screen_live.png) | ![](images/screen_grid.png) | ![](images/screen_drum.png) |
+| ![](images/screen_title.png) | ![](images/screen_synth.png) | ![](images/screen_synth_kick.png) | ![](images/screen_track.png) |
 
-| SYNTH | GEN | CHAIN | SAVE |
+| LIVE | GEN | SONG | SAVE |
 |---|---|---|---|
-| ![](images/screen_synth.png) | ![](images/screen_gen.png) | ![](images/screen_chain.png) | ![](images/screen_save.png) |
+| ![](images/screen_live.png) | ![](images/screen_gen.png) | ![](images/screen_song.png) | ![](images/screen_save.png) |
 
 ## 6. Bugs found and fixed during testing
 
@@ -145,6 +173,7 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
   - CORRODE filled every step with accents; fixed with density and accent homeostasis.
 - **Evolution stalled after chain changes:** the candidate is now retargeted when playback moves to another pattern.
 - **Build reproducibility:** a generated source was not listed explicitly in the Makefile, so it would not regenerate after deletion. Fixed.
+- **1.1 drum voicing in the ISR** pushed the worst-case tick over the period; it is now precomputed in the main loop.
 - **Test-harness bugs:** `wav`/`wavstop` parsing, and NR33/34 being write-only, were fixed in the tests, not the ROM.
 
 ## 7. Not verified
