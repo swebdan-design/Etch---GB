@@ -82,6 +82,7 @@ int main(int argc, char **argv)
     GB_set_sample_rate(gb, 48000);
     GB_apu_set_sample_callback(gb, on_sample);
     GB_set_emulate_joypad_bouncing(gb, false);
+    GB_set_highpass_filter_mode(gb, GB_HIGHPASS_ACCURATE);   /* the console's output capacitor */
     setvbuf(stdout, NULL, _IOLBF, 0);
     while (fgets(line, sizeof line, stdin)) {
         int n = 0, v = 0;

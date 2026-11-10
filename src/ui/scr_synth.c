@@ -52,17 +52,18 @@ static void draw_param(uint8_t i)
     case 11: name = dest_n[v & 3]; break;
     case 12: name = shape_n[v & 3]; break;
     }
-    if (name) ui_textn(6, y, name, 4);
+    ui_put(6, y, 0);
+    if (name) ui_textn(7, y, name, 4);
     else if (i == 15) {
-        ui_put(6, y, v >= 12 ? ('+' - 32) : ('-' - 32));
-        ui_num(7, y, v >= 12 ? (uint16_t)(v - 12) : (uint16_t)(12 - v), 2);
-        ui_put(9, y, 0);
+        ui_put(7, y, v >= 12 ? ('+' - 32) : ('-' - 32));
+        ui_num(8, y, v >= 12 ? (uint16_t)(v - 12) : (uint16_t)(12 - v), 2);
+        ui_put(10, y, 0);
     } else {
-        ui_num(6, y, v, 3);
-        ui_put(9, y, 0);
+        ui_num(7, y, v, 3);
+        ui_put(10, y, 0);
     }
-    if (i == 13) ui_meter(10, y, 4, (uint8_t)(v - 60), 160);
-    else ui_meter(10, y, 4, v, pmax[i]);
+    if (i == 13) ui_meter(11, y, 3, (uint8_t)(v - 60), 160);
+    else ui_meter(11, y, 3, v, pmax[i]);
 }
 
 static void scope_render(uint8_t wave, uint8_t res, uint8_t cut)

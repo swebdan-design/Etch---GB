@@ -35,7 +35,7 @@ typedef struct {
 /* lane-major table: [lane][kit] */
 static const drum_def_t kits[NUM_LANES][KITS_PER_LANE] = {
     {   /* KICK */
-        { USE_TONE1, 0x80, 0xF3, 1560, 0,    3, 0, 0, 0, 0 },  /* DEEP  */
+        { USE_TONE1, 0x80, 0xF2, 1560, 0,    3, 0, 0, 0, 0 },  /* DEEP  */
         { USE_TONE1, 0x80, 0xF1, 1720, 240,  2, 0, 0, 0, 0 },  /* PUNCH */
         { USE_TONE1, 0x40, 0xF2, 1300, 60,   2, 0, 0, 0, 0 },  /* THUD  */
         { USE_TONE1 | USE_NOISE, 0x80, 0xF1, 1800, 300, 1, 0x3A, 0x61, 0x00, 0 }, /* CLICK */

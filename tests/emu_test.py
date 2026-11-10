@@ -362,6 +362,26 @@ def main():
     rec("corrupted slot refused, project untouched", et.pb(SYNTH + S_CUT)[0] == cut_before)
     et.stop()
 
+    # ---- every ROM track loads through the UI and plays ----------------------
+    et = Etch(rom)
+    et.boot_to_live()
+    et.e.hold("select"); et.e.press("left"); et.e.release("select")   # LIVE -> SAVE
+    et.e.tick(20)
+    names = ["CONTACT", "CONCRETE", "STATIC", "CORROSION", "NIGHTSHIFT", "WAREHOUSE", "SIGNALLOSS", "AFTERIMAGE"]
+    for t in range(8):
+        et.e.press("down" if t else "down")
+        if t == 0:
+            for _ in range(7):
+                et.e.press("down")          # S1..S8 -> T1
+        et.e.press("a"); et.e.press("a"); et.e.tick(30)
+        nm = et.pb(NAME, 10).decode("ascii", "replace").strip()
+        bpm = et.pb(SYNTH + S_BPM)[0]
+        x, sr = capture(et, os.path.join(art, "track%d.wav" % (t + 1)), 300)
+        rec("track T%d %-10s loads and plays" % (t + 1, names[t]),
+            nm == names[t] and et.e.rd("seq_playing") == 1 and rms(x) > 400,
+            "name=%s bpm=%d rms=%.0f" % (nm, bpm, rms(x)))
+    et.stop()
+
     # ---- long run --------------------------------------------------------------
     et = Etch(rom)
     et.boot_to_live()
