@@ -112,7 +112,6 @@ def main():
     et.e.tick(240)
     txt = "\n".join(et.e.screen_text())
     rec("title shows 'by Synth Centric' exactly", "by Synth Centric" in txt)
-    rec("title shows 'PRESS START'", "PRESS START" in txt or True, "(blinking; checked below)")
     et.e.screenshot(os.path.join(art, "screen_title.png"))
     # the logo and subtitle are graphic tiles; verify they are on screen
     rows = et.e.screen_text()

@@ -25,12 +25,12 @@ GEN_WAVES := assets/generated_waves/wavetables.c assets/generated_waves/wavelut.
 GEN_GFX   := src/ui/gfx_data.c include/gfx_tiles.h
 GEN_PRE   := src/presets/preset_data.c src/presets/track_names.c
 
-SRCS := $(sort $(wildcard src/*.c src/*/*.c) $(GEN_WAVES) src/ui/gfx_data.c $(GEN_PRE))
+SRCS := $(sort $(wildcard src/*.c src/*/*.c) $(GEN_WAVES) src/ui/gfx_data.c src/audio/engine_tables.c $(GEN_PRE))
 ASMS := $(sort $(wildcard src/*/*.s))
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(patsubst %.s,$(BUILD)/%.o,$(ASMS))
 HDRS := $(wildcard include/*.h) include/gfx_tiles.h
 
-.PHONY: all clean rom test hosttest emutest release distclean
+.PHONY: all clean rom test hosttest emutest release distclean pdf
 
 all: rom
 
@@ -80,6 +80,9 @@ release: rom hosttest
 	@mkdir -p $(RELEASE)
 	cp $(BUILD)/$(ROMNAME).gb $(RELEASE)/$(ROMNAME).gb
 	$(PYTHON) tools/make_source_zip.py $(RELEASE)/ETCH_Source.zip
+
+pdf:
+	$(PYTHON) tools/make_pdf_manual.py $(RELEASE)/ETCH_Manual.pdf
 
 clean:
 	rm -rf $(BUILD)
