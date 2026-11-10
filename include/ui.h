@@ -41,6 +41,7 @@ void ui_msg_tick(void);
 /* ---- input ------------------------------------------------------------- */
 extern uint8_t key_held, key_pressed, key_repeat;
 void ui_input(void);
+void ui_input_init(void);
 #define K_DPAD (J_UP | J_DOWN | J_LEFT | J_RIGHT)
 
 /* screens (banked) */

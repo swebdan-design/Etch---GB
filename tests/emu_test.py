@@ -149,18 +149,19 @@ def main():
     # ---- screens reachable ---------------------------------------------------
     names = ["LIVE", "GRID", "DRUM", "SYNTH", "GEN", "CHAIN", "SAVE"]
     for i in range(1, 7):
-        et.e.hold("select"); et.e.press("right", hold=2, after=2); et.e.release("select")
+        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
         et.e.tick(20)
         hdr = et.e.screen_text()[0]
         rec("SELECT+RIGHT reaches %s" % names[i], hdr.startswith(names[i]), hdr)
         et.e.screenshot(os.path.join(art, "screen_%s.png" % names[i].lower()))
-    et.e.hold("select"); et.e.press("right", hold=2, after=2); et.e.release("select")
+    et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
     et.e.tick(20)
     rec("screen cycle wraps to LIVE", et.e.screen_text()[0].startswith("LIVE"))
     rec("playback continued through all screen changes", et.e.rd("seq_playing") == 1)
 
     # ---- synth: cutoff/resonance change timbre (isolated bass) ---------------
     et.e.press("start"); et.e.tick(10)                      # stop
+    et.pset(CHAIN + 32, 0)                                  # loop mode: stay on this pattern
     et.pset(MUTES, 0x1E)                                    # mute drums
     et.pset(SYNTH + S_ENV, 0); et.pset(SYNTH + S_ACC, 0)
     et.pset(SYNTH + S_DRV, 0); et.pset(SYNTH + S_SWING, 0)
@@ -209,9 +210,7 @@ def main():
     nr = 0
     for i in range(120):
         et.e.tick(1)
-        lo = et.e.peek(0xFF1D)[0]
-        hi = et.e.peek(0xFF1E)[0] & 7
-        trace.append((hi << 8) | lo)
+        trace.append(et.e.rd16("synth_dbg_period"))   # NR33/34 are write-only
     et.e.press("start"); et.e.tick(10)
     vals = sorted(set(v for v in trace if 1000 < v < 1800))
     inter = [v for v in vals if 1050 < v < 1540]
@@ -229,9 +228,15 @@ def main():
     et.e.press("start"); et.e.tick(10)
     spb = int(sr * 60 / 120 / 4)
     # align on steps: compare energy of even (accented) vs odd steps
-    seg = [rms(x[i * spb:(i + 1) * spb]) for i in range(len(x) // spb)]
-    # phase unknown: take the max of the two alternations
-    ev = np.mean(seg[0::2]); od = np.mean(seg[1::2])
+    # phase unknown: search the window offset that best separates the steps
+    best = (0, 1, 1)
+    for off in range(0, spb, spb // 16):
+        seg = [rms(x[off + i * spb: off + (i + 1) * spb]) for i in range((len(x) - off) // spb)]
+        a1, a2 = np.mean(seg[0::2]), np.mean(seg[1::2])
+        r = max(a1, a2) / max(min(a1, a2), 1)
+        if r > best[0]:
+            best = (r, a1, a2)
+    ev, od = best[1], best[2]
     rec("ACCENT audibly louder/brighter", max(ev, od) > 1.15 * min(ev, od), "step rms %.0f vs %.0f" % (max(ev, od), min(ev, od)))
 
     # ---- drums (bass muted) ---------------------------------------------------
@@ -244,6 +249,7 @@ def main():
     rec("kick/snare/hat lanes produce sound", rms(x) > 200, "rms=%.0f" % rms(x))
     # channel activity: NR52 bits while playing a combined step
     et.pset(MUTES, 0x00)
+    et.pset(base + P_KIT + 1, 0)                            # SHORT snare: CH2 body + CH4 noise
     for l, m in enumerate([0xFFFF, 0xFFFF, 0xFFFF, 0x0000]):
         et.pset(base + P_DRUM + 2 * l, m & 255); et.pset(base + P_DRUM + 2 * l + 1, m >> 8)
     et.e.press("start"); et.e.tick(20)
@@ -280,7 +286,7 @@ def main():
     rec("pattern memory valid after mutation", valid)
     # undo
     prev = bytes(et.e.peek(et.e.sym("evo_undo"), 64))
-    et.e.hold("select"); et.e.press("b", hold=2, after=2); et.e.release("select")
+    et.e.hold("select"); et.e.press("b", hold=5, after=3); et.e.release("select")
     et.e.tick(5)
     undone = et.pat(cur)
     rec("SELECT+B undo restores the previous generation", undone == prev and undone != after)
@@ -292,7 +298,7 @@ def main():
     rec("STABLE leaves the programmed pattern untouched", et.pat(cur) == snap)
     # manual evolve in STABLE
     c0 = et.e.rd("evo_commits")
-    et.e.hold("select"); et.e.press("a", hold=2, after=2); et.e.release("select")
+    et.e.hold("select"); et.e.press("a", hold=5, after=3); et.e.release("select")
     et.e.tick(150)
     rec("SELECT+A requests an evolution (commits at bar line)", et.e.rd("evo_commits") != c0)
     et.stop()
@@ -305,7 +311,7 @@ def main():
     et.boot_to_live()
     # go to SAVE screen
     for i in range(6):
-        et.e.hold("select"); et.e.press("left" if False else "right", hold=2, after=2); et.e.release("select")
+        et.e.hold("select"); et.e.press("left" if False else "right", hold=5, after=3); et.e.release("select")
     et.e.tick(20)
     rec("SAVE screen reached", et.e.screen_text()[0].startswith("SAVE"))
     txt = "\n".join(et.e.screen_text())
@@ -314,7 +320,7 @@ def main():
     et.pset(SYNTH + S_CUT, 23); et.pset(SYNTH + S_BPM, 141)
     marker = et.pat(1)
     et.e.press("down"); et.e.press("down")
-    et.e.press("a"); et.e.tick(30)
+    et.e.press("a"); et.e.tick(20)
     txt = "\n".join(et.e.screen_text())
     rec("save to empty slot reports verified", "SAVED + VERIFIED" in txt)
     projbytes = et.pb(0, 73 + 64 * 32)
@@ -324,7 +330,7 @@ def main():
     et = Etch(rom, bat)
     et.boot_to_live()
     for i in range(6):
-        et.e.hold("select"); et.e.press("right", hold=2, after=2); et.e.release("select")
+        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
     et.e.tick(20)
     txt = "\n".join(et.e.screen_text())
     rec("slot persists across power cycle", "S3 CONTACT" in txt or "S3*CONTACT" in txt, [r for r in et.e.screen_text() if r.startswith("S3")])
@@ -346,7 +352,7 @@ def main():
     et = Etch(rom, bad)
     et.boot_to_live()
     for i in range(6):
-        et.e.hold("select"); et.e.press("right", hold=2, after=2); et.e.release("select")
+        et.e.hold("select"); et.e.press("right", hold=5, after=3); et.e.release("select")
     et.e.tick(20)
     txt = "\n".join(et.e.screen_text())
     rec("corrupted slot detected (checksum)", "CORRUPT" in txt)

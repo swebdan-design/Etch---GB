@@ -10,6 +10,24 @@
 
 static uint8_t map[SCR_H][SCR_W];
 static uint8_t dirty[SCR_H];
+static const uint16_t rowoff[SCR_H] = {
+    0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340
+};
+#define rowp(y) (&map[0][0] + rowoff[y])
+
+/* decimal digits without division (SDCC's 16-bit modulo is very slow) */
+static uint8_t digs[5];
+static void to_dec(uint16_t v)
+{
+    static const uint16_t pw[4] = { 10000, 1000, 100, 10 };
+    uint8_t i, d;
+    for (i = 0; i < 4; i++) {
+        d = 0;
+        while (v >= pw[i]) { v -= pw[i]; d++; }
+        digs[i] = d;
+    }
+    digs[4] = (uint8_t)v;
+}
 
 extern uint16_t vr_src, vr_dst;
 extern uint8_t vr_n;
@@ -21,6 +39,7 @@ static uint8_t key_prev, rep_timer;
 static char msg_buf[SCR_W + 1];
 static uint8_t msg_timer;
 static const char *hdr_name;
+static uint8_t hc_cur = 0xFF, hc_q, hc_pos, hc_bpm, hc_song;
 
 static const char note_names[] = "C-C#D-D#E-F-F#G-G#A-A#B-";
 
@@ -35,16 +54,18 @@ void ui_cls(void)
 
 void ui_put(uint8_t x, uint8_t y, uint8_t t)
 {
+    uint8_t *p;
     if (x >= SCR_W || y >= SCR_H) return;
-    if (map[y][x] != t) {
-        map[y][x] = t;
+    p = rowp(y) + x;
+    if (*p != t) {
+        *p = t;
         dirty[y] = 1;
     }
 }
 
 uint8_t ui_get(uint8_t x, uint8_t y)
 {
-    return map[y][x];
+    return rowp(y)[x];
 }
 
 void ui_fill(uint8_t x, uint8_t y, uint8_t w, uint8_t t)
@@ -81,23 +102,19 @@ void ui_invert(uint8_t x, uint8_t y, uint8_t w)
 
 void ui_num(uint8_t x, uint8_t y, uint16_t v, uint8_t digits)
 {
-    uint8_t i = digits;
-    uint8_t lead = 1;
-    while (i--) {
-        uint8_t d = (uint8_t)(v % 10);
-        ui_put((uint8_t)(x + i), y, (v || lead) ? (uint8_t)('0' - 32 + d) : 0);
-        v /= 10;
-        lead = 0;
+    uint8_t i, lead = 1;
+    to_dec(v);
+    for (i = (uint8_t)(5 - digits); i < 5; i++) {
+        if (digs[i] || i == 4) lead = 0;
+        ui_put(x++, y, lead ? 0 : (uint8_t)('0' - 32 + digs[i]));
     }
 }
 
 void ui_num0(uint8_t x, uint8_t y, uint16_t v, uint8_t digits)
 {
-    uint8_t i = digits;
-    while (i--) {
-        ui_put((uint8_t)(x + i), y, (uint8_t)('0' - 32 + (uint8_t)(v % 10)));
-        v /= 10;
-    }
+    uint8_t i;
+    to_dec(v);
+    for (i = (uint8_t)(5 - digits); i < 5; i++) ui_put(x++, y, (uint8_t)('0' - 32 + digs[i]));
 }
 
 void ui_hex(uint8_t x, uint8_t y, uint16_t v, uint8_t digits)
@@ -112,16 +129,19 @@ void ui_hex(uint8_t x, uint8_t y, uint16_t v, uint8_t digits)
 
 void ui_note(uint8_t x, uint8_t y, uint8_t note)
 {
-    uint8_t pc = note % 12;
-    ui_put(x, y, (uint8_t)(note_names[pc * 2] - 32));
-    ui_put((uint8_t)(x + 1), y, (uint8_t)(note_names[pc * 2 + 1] - 32));
-    ui_put((uint8_t)(x + 2), y, (uint8_t)('1' - 32 + note / 12));
+    uint8_t oct = 0;
+    while (note >= 12) { note -= 12; oct++; }
+    ui_put(x, y, (uint8_t)(note_names[note * 2] - 32));
+    ui_put((uint8_t)(x + 1), y, (uint8_t)(note_names[note * 2 + 1] - 32));
+    ui_put((uint8_t)(x + 2), y, (uint8_t)('1' - 32 + oct));
 }
 
 void ui_meter(uint8_t x, uint8_t y, uint8_t w, uint8_t v, uint8_t max)
 {
     /* w tiles, 8 px each */
-    uint16_t px = max ? (uint16_t)(((uint16_t)v * (uint16_t)(w * 8) + max / 2) / max) : 0;
+    uint16_t num = (uint16_t)v * (uint16_t)(w * 8) + (max >> 1);
+    uint8_t px = 0;
+    if (max) while (num >= max) { num -= max; px++; }
     while (w--) {
         if (px >= 8) { ui_put(x, y, T_METER8); px -= 8; }
         else { ui_put(x, y, (uint8_t)(T_METER0 + px)); px = 0; }
@@ -131,7 +151,7 @@ void ui_meter(uint8_t x, uint8_t y, uint8_t w, uint8_t v, uint8_t max)
 
 static void flush_row(uint8_t y)
 {
-    vr_src = (uint16_t)&map[y][0];
+    vr_src = (uint16_t)rowp(y);
     vr_dst = 0x9800 + ((uint16_t)y << 5);
     vr_n = SCR_W;
     vram_copy_asm();
@@ -174,6 +194,7 @@ void ui_vram_tiles(uint8_t first, uint8_t count, const uint8_t *data)
 void ui_header(const char *name)
 {
     hdr_name = name;
+    hc_cur = 0xFF;
     ui_fill(0, 0, SCR_W, 0);
     ui_textn(0, 0, name, 5);
     ui_invert(0, 0, 5);
@@ -184,6 +205,9 @@ void ui_header(const char *name)
 void ui_header_update(void)
 {
     uint8_t q = seq_queued;
+    if (hc_cur == seq_cur && hc_q == q && hc_pos == seq_chain_pos && hc_bpm == proj.synth.bpm
+        && hc_song == proj.chain.song) goto flags;
+    hc_cur = seq_cur; hc_q = q; hc_pos = seq_chain_pos; hc_bpm = proj.synth.bpm; hc_song = proj.chain.song;
     ui_put(6, 0, 'P' - 32);
     ui_num0(7, 0, (uint16_t)(seq_cur + 1), 2);
     if (q != 0xFF) {
@@ -195,8 +219,9 @@ void ui_header_update(void)
     } else {
         ui_fill(9, 0, 3, 0);
     }
-    ui_put(12, 0, seq_fill ? T_FILLMARK : 0);
     ui_num(13, 0, proj.synth.bpm, 3);
+flags:
+    ui_put(12, 0, seq_fill ? T_FILLMARK : 0);
     ui_put(16, 0, (proj.gen.mode != EVO_STABLE) ? T_EVO : 0);
     ui_put(17, 0, (evo_undo_pat != 0xFF) ? ('U' - 32) : 0);
     ui_put(19, 0, seq_playing ? T_PLAY : T_STOP);
@@ -223,10 +248,31 @@ void ui_msg_tick(void)
 }
 
 /* ---- input ------------------------------------------------------------- */
-void ui_input(void)
+/* VBlank interrupt: sample the pad every frame and latch new presses, so a
+ * short tap is never lost even if the main loop is busy for a few frames. */
+static volatile uint8_t vbl_pad, vbl_latch;
+static void vbl_isr(void)
 {
     uint8_t j = joypad();
-    key_pressed = (uint8_t)(j & ~key_prev);
+    vbl_latch |= (uint8_t)(j & ~vbl_pad);
+    vbl_pad = j;
+}
+
+void ui_input_init(void)
+{
+    CRITICAL { add_VBL(vbl_isr); }
+}
+
+void ui_input(void)
+{
+    uint8_t j, latch;
+    CRITICAL {
+        j = vbl_pad;
+        latch = vbl_latch;
+        vbl_latch = 0;
+    }
+    key_pressed = (uint8_t)((j & ~key_prev) | latch);
+    j |= latch;                      /* a tap that already ended still counts as held this frame */
     key_repeat = key_pressed;
     if ((j & K_DPAD) && (j & K_DPAD) == (key_prev & K_DPAD)) {
         if (++rep_timer >= 18) {

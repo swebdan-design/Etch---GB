@@ -62,6 +62,7 @@ static const uint8_t slide_b[16] = { 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 0
 volatile uint8_t synth_gate;
 volatile uint8_t synth_dbg_cut, synth_dbg_res, synth_dbg_amp;
 volatile uint8_t synth_reloads;
+volatile uint16_t synth_dbg_period;   /* last CH3 period written (tests) */
 
 static uint16_t pitch;          /* 8.8 semitone, includes tune offset   */
 static uint16_t pitch_target;
@@ -154,6 +155,7 @@ static void write_pitch(void)
     if (p == last_pitch_out) return;             /* nothing to do */
     last_pitch_out = p;
     per = pitch_to_period(p);
+    synth_dbg_period = per;
     NR33_REG = (uint8_t)per;
     cur_hi = (uint8_t)(per >> 8) & 0x07;
     NR34_REG = cur_hi;               /* no trigger: phase continues */

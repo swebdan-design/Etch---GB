@@ -23,6 +23,8 @@ static pattern_t evo_tmp;
 static uint16_t evo_ctr;
 static uint8_t last_commits;
 static char msgbuf[21];
+volatile uint16_t main_loops;
+volatile uint8_t main_worst;   /* longest main-loop iteration, frames */
 
 void app_redraw(void) { need_redraw = 1; }
 
@@ -52,6 +54,9 @@ void app_fill(void)
 static void evo_service(void)
 {
     uint8_t mode = proj.gen.mode, target;
+    if (evo_state == EVO_READY && evo_target != seq_cur) {
+        CRITICAL { if (evo_state == EVO_READY) evo_state = EVO_IDLE; }   /* playback moved on */
+    }
     if (evo_state != EVO_IDLE) return;
     if (mode == EVO_STABLE && !evo_request) return;
     target = seq_cur;
@@ -195,6 +200,7 @@ void main(void)
     synth_init();
     drums_init();
     seq_init();
+    ui_input_init();
     app_project_loaded();
     SHOW_BKG;
     enable_interrupts();
@@ -210,7 +216,10 @@ void main(void)
     last_commits = evo_commits;
 
     while (1) {
+        uint8_t t0;
         wait_vbl_done();
+        t0 = (uint8_t)sys_time;
+        main_loops++;
         ui_flush();
         ui_input();
         global_keys();
@@ -234,5 +243,7 @@ void main(void)
             ui_msg(msgbuf);
         }
         evo_service();
+        t0 = (uint8_t)((uint8_t)sys_time - t0);
+        if (t0 > main_worst) main_worst = t0;
     }
 }

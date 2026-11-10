@@ -21,6 +21,12 @@ static uint8_t status[NUM_SLOTS];
 static char names[NUM_SLOTS][PROJECT_NAME_LEN];
 static uint8_t last_slot;
 
+static void scan_one(uint8_t s)
+{
+    status[s] = storage_slot_status(s, names[s]);
+    last_slot = storage_last_slot();
+}
+
 static void scan(void)
 {
     uint8_t s;
@@ -108,7 +114,8 @@ void scr_save_frame(void) BANKED
                     storage_erase(s);
                     ui_msg("SLOT ERASED");
                 }
-                scan();
+                scan_one(s);
+                { uint8_t r; for (r = 0; r < NUM_SLOTS; r++) draw_row(r); }
             }
             draw_row(s);
         } else {

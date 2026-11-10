@@ -34,7 +34,13 @@ static const char * const wave_names[4] = { "SAW ", "SQR ", "HOLW", "BITE" };
 static void draw_lanes(void)
 {
     const pattern_t *p = &proj.pat[seq_cur];
+    const uint16_t *mk = seq_fill ? seq_fill_mask : p->drum;
     uint8_t s, l, x, f, t, tile;
+    uint8_t lm[NUM_LANES * 2];
+    for (l = 0; l < NUM_LANES; l++) {
+        lm[l * 2] = (uint8_t)mk[l];
+        lm[l * 2 + 1] = (uint8_t)(mk[l] >> 8);
+    }
     for (s = 0; s < 16; s++) {
         x = (uint8_t)(3 + s);
         f = p->flags[s];
@@ -47,10 +53,11 @@ static void draw_lanes(void)
             tile = (s & 3) ? T_CELL_OFF : T_CELL_BEAT;
         }
         ui_put(x, ROW_LANE0, tile);
-        for (l = 0; l < NUM_LANES; l++) {
-            uint16_t m = seq_fill ? seq_fill_mask[l] : p->drum[l];
-            ui_put(x, (uint8_t)(ROW_LANE0 + 1 + l),
-                   (m & ((uint16_t)1 << s)) ? T_CELL_ON : ((s & 3) ? T_CELL_OFF : T_CELL_BEAT));
+        {
+            uint8_t off = (s & 3) ? T_CELL_OFF : T_CELL_BEAT;
+            uint8_t byte = s >> 3, bit = (uint8_t)(1 << (s & 7));
+            for (l = 0; l < NUM_LANES; l++)
+                ui_put(x, (uint8_t)(ROW_LANE0 + 1 + l), (lm[l * 2 + byte] & bit) ? T_CELL_ON : off);
         }
     }
 }
@@ -189,7 +196,10 @@ void scr_live_frame(void) BANKED
         draw_lanes();
         draw_footer();
     }
-    for (l = 0; l < N_LANES; l++) if (act[l]) act[l]--;
-    draw_lane_labels();
+    {
+        uint8_t ch = 0;
+        for (l = 0; l < N_LANES; l++) if (act[l]) { act[l]--; ch = 1; }
+        if (ch) draw_lane_labels();
+    }
     if (!seq_playing) draw_playhead();
 }

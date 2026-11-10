@@ -122,14 +122,14 @@ int main(int argc, char **argv)
             }
             fclose(f);
             printf("ok\n");
+        } else if (!strncmp(line, "wavstop", 7)) {
+            if (wavf) { wav_header(wavf, wav_frames); fclose(wavf); wavf = NULL; }
+            printf("ok %u\n", wav_frames);
         } else if (sscanf(line, "wav %255s", a1) == 1) {
             wavf = fopen(a1, "wb");
             wav_frames = 0;
             wav_header(wavf, 0);
             printf("ok\n");
-        } else if (!strncmp(line, "wavstop", 7)) {
-            if (wavf) { wav_header(wavf, wav_frames); fclose(wavf); wavf = NULL; }
-            printf("ok %u\n", wav_frames);
         } else if (sscanf(line, "savebat %255s", a1) == 1) {
             GB_save_battery(gb, a1);
             printf("ok\n");

@@ -25,16 +25,16 @@ static uint8_t *slot_base(uint8_t s)
     return (uint8_t *)(0xA000 + ((uint16_t)(s & 1) << 12));
 }
 
+extern uint16_t fl_ptr, fl_n, fl_sum;
+void fletcher_asm(void);
+
+/* Fletcher-16 (assembly, src/storage/fletcher.s) */
 static uint16_t fletcher(const uint8_t *p, uint16_t n)
 {
-    uint16_t a = 0, b = 0;
-    while (n--) {
-        a += *p++;
-        if (a >= 255) a -= 255;
-        b += a;
-        if (b >= 255) b -= 255;
-    }
-    return (uint16_t)((b << 8) | a);
+    fl_ptr = (uint16_t)p;
+    fl_n = n;
+    fletcher_asm();
+    return fl_sum;
 }
 
 static uint8_t check(uint8_t *base)

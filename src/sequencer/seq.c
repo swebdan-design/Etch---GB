@@ -4,11 +4,11 @@
  * that UI drawing and input handling can never delay a step.
  *
  * Timing: the hardware timer fires at 256 Hz (4096 Hz / 16).  Every tick a
- * 16-bit phase accumulator advances by an increment derived from BPM; when it
- * wraps, the next 1/16 step begins.  This gives sub-BPM tempo resolution with
- * at most one tick (3.9 ms) of quantisation and no cumulative drift.  Swing
- * uses different increments for even and odd steps (the pair always sums to
- * exactly two straight 16ths, so swing never shifts the bar grid).
+ * 16.8 fixed-point phase accumulator spanning a pair of 16th notes advances
+ * by an increment derived from BPM.  The even 16th begins when it wraps, the
+ * odd 16th when it passes the swing point.  Step onsets are quantised to one
+ * tick (3.9 ms) but never accumulate error: the long-run tempo is exact to
+ * within 0.002 %, and swing cannot change the tempo.
  *
  * Step semantics (TB-style):
  *   NOTE   new note; envelopes retrigger unless the previous step slid into it
@@ -38,7 +38,6 @@ volatile uint8_t seq_fill;
 volatile uint8_t seq_activity;
 volatile uint8_t seq_step_event;
 volatile uint8_t seq_isr_max;
-volatile uint8_t dbg_synth, dbg_drums, dbg_step;
 uint16_t seq_fill_mask[NUM_LANES];
 static uint8_t fill_bars;
 static uint8_t chain_jump = 0xFF;
@@ -52,8 +51,8 @@ pattern_t evo_cand;
 pattern_t evo_undo;
 static uint8_t phrase_ctr;
 
-static uint16_t phase;
-static uint16_t inc_even, inc_odd;
+static uint16_t pphase, pinc, swing_pt, gate_even, gate_odd;
+static uint8_t  pfrac, pinc_frac;
 static uint8_t gate_done;       /* gate point of this step handled          */
 static uint8_t next_plays;      /* pre-rolled decision for the next step    */
 static uint8_t cur_plays;       /* the current step's note actually sounds  */
@@ -62,7 +61,7 @@ static uint8_t pending_start;
 static uint16_t live_rng = 0x5EED;
 
 static const uint8_t step_bit[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-static const uint16_t gate_pos[4] = { 0x6000, 0x9000, 0xC000, 0xF000 };
+static const uint8_t gate_frac[4] = { 6, 9, 12, 15 };   /* gate length in 16ths of a step */
 
 static uint8_t live_rand(void)
 {
@@ -147,7 +146,7 @@ static uint8_t next_type(void)
 
 static void bar_boundary(void)
 {
-    uint8_t changed = 0, due;
+    uint8_t changed = 0;
     uint8_t prev = seq_cur;
 
     seq_bar_total++;
@@ -176,20 +175,28 @@ static void bar_boundary(void)
     if (seq_cur != prev) changed = 1;
     if (changed) seq_loop = 0; else seq_loop++;
 
-    /* CORROSION: commit a prepared mutation on a phrase boundary */
     phrase_ctr++;
+}
+
+/* CORROSION commit.  Runs at the gate point of step 16 (a tick with no step
+ * work) so the two 64-byte copies never share a tick with a step; the new
+ * material therefore takes effect exactly on the next downbeat. */
+static void evo_commit_point(void)
+{
+    uint8_t due, lp, np, nphrase = (uint8_t)(phrase_ctr + 1);
     due = evo_request;
-    if (proj.gen.mode == EVO_DRIFT && (phrase_ctr & 3) == 0) due = 1;
-    if (proj.gen.mode == EVO_CORRODE && (phrase_ctr & 1) == 0) due = 1;
-    if (due && evo_state == EVO_READY && evo_target == seq_cur &&
-        !(proj.pat[seq_cur].lock & PLOCK_ALL)) {
-        memcpy(&evo_undo, &proj.pat[seq_cur], sizeof(pattern_t));
-        memcpy(&proj.pat[seq_cur], &evo_cand, sizeof(pattern_t));
-        evo_undo_pat = seq_cur;
-        evo_state = EVO_IDLE;
-        evo_request = 0;
-        evo_commits++;
-    }
+    if (proj.gen.mode == EVO_DRIFT && (nphrase & 3) == 0) due = 1;
+    if (proj.gen.mode == EVO_CORRODE && (nphrase & 1) == 0) due = 1;
+    if (!due || evo_state != EVO_READY) return;
+    np = peek_next_pattern(&lp);
+    if (evo_target != np || (proj.pat[np].lock & PLOCK_ALL)) return;
+    memcpy(&evo_undo, &proj.pat[np], sizeof(pattern_t));
+    memcpy(&proj.pat[np], &evo_cand, sizeof(pattern_t));
+    evo_undo_pat = np;
+    evo_state = EVO_IDLE;
+    evo_request = 0;
+    evo_commits++;
+    next_plays = decide(&proj.pat[np], 0, lp);   /* re-roll the new downbeat */
 }
 
 static void step_advance(void)
@@ -264,8 +271,10 @@ static void step_advance(void)
 static void gate_point(void)
 {
     const pattern_t *p = &proj.pat[seq_cur];
-    uint8_t f = p->flags[seq_step];
+    uint8_t f;
     gate_done = 1;
+    if (seq_step == 15) evo_commit_point();
+    f = p->flags[seq_step];
     if (!cur_plays) return;
     if ((f & STEP_SLIDE) && next_plays) {
         legato = 1;                       /* hold + glide into next note */
@@ -276,48 +285,66 @@ static void gate_point(void)
 }
 
 volatile uint16_t isr_count;
+volatile uint8_t isr_late;          /* entries > 1.5 periods after the previous one */
+static uint8_t isr_prev;
 volatile uint16_t isr_div_sum;
 static void timer_isr(void)
 {
     uint8_t t0 = DIV_REG;
-    isr_count++;
     uint16_t old;
+    if ((uint8_t)(t0 - isr_prev) > 96 && isr_count) isr_late++;
+    isr_prev = t0;
+    isr_count++;
     if (seq_playing) {
         if (pending_start) {
             step_advance();
         } else {
-            old = phase;
-            phase += (seq_step & 1) ? inc_odd : inc_even;
-            if (phase < old) {
-                uint8_t t1 = DIV_REG; step_advance(); t1 = DIV_REG - t1; if (t1 > dbg_step) dbg_step = t1;
-            } else if (!gate_done && phase >= gate_pos[proj.synth.gate & 3]) {
+            /* 16.8 fixed-point phase over a PAIR of 16ths */
+            uint8_t f = pfrac;
+            old = pphase;
+            pfrac += pinc_frac;
+            pphase += pinc + (pfrac < f ? 1 : 0);
+            if (pphase < old) {
+                step_advance();                     /* even step: pair start   */
+            } else if (old < swing_pt && pphase >= swing_pt) {
+                step_advance();                     /* odd step: swing point   */
+            } else if (!gate_done && pphase >= ((seq_step & 1) ? gate_odd : gate_even)) {
                 gate_point();
             }
         }
     }
-    { uint8_t t1 = DIV_REG; synth_tick(); t1 = DIV_REG - t1; if (t1 > dbg_synth) dbg_synth = t1; }
-    { uint8_t t1 = DIV_REG; drums_tick(); t1 = DIV_REG - t1; if (t1 > dbg_drums) dbg_drums = t1; }
+    synth_tick();
+    drums_tick();
     t0 = DIV_REG - t0;
     if (t0 > seq_isr_max) seq_isr_max = t0;
     isr_div_sum += t0;
 }
 
+/* Tempo, swing and gate length.
+ * One accumulator turn (65536) = two straight 16ths, so its increment per
+ * 256 Hz tick is bpm * 2/15 * 65536 / 256 / 2 = bpm * 8.5333 (16.8 fixed).
+ * The even 16th starts at 0, the odd one at swing_pt: swing moves only the
+ * offbeat and can never change the tempo or drift against the bar. */
 void seq_set_tempo(void)
 {
     uint8_t bpm = proj.synth.bpm;
-    uint16_t inc, ie, io;
     uint8_t sw = proj.synth.swing;
+    uint8_t g = gate_frac[proj.synth.gate & 3];
+    uint32_t inc24;
+    uint16_t sp, ge, go;
     if (bpm < 60) bpm = 60;
     if (bpm > 220) bpm = 220;
     if (sw > 8) sw = 8;
-    /* 65536 * (bpm * 4 / 60) / 256 = bpm * 17.0667 */
-    inc = (uint16_t)(((uint32_t)bpm * 4369UL) >> 8);
-    /* swing s = sw * 4%: even step lasts T(1+s), odd step T(1-s) */
-    ie = (uint16_t)(((uint32_t)inc * 100UL) / (100 + sw * 4));
-    io = (uint16_t)(((uint32_t)inc * 100UL) / (100 - sw * 4));
+    inc24 = ((uint32_t)bpm * 4369UL) >> 1;          /* bpm * 8.5333 * 256 */
+    sp = (uint16_t)(0x8000u + (uint16_t)sw * 1311u); /* +4% of a pair per unit */
+    ge = (uint16_t)(((uint32_t)sp * g) >> 4);
+    go = (uint16_t)(sp + ((((uint32_t)0x10000UL - sp) * g) >> 4));
     CRITICAL {
-        inc_even = ie;
-        inc_odd = io;
+        pinc = (uint16_t)(inc24 >> 8);
+        pinc_frac = (uint8_t)inc24;
+        swing_pt = sp;
+        gate_even = ge;
+        gate_odd = go;
     }
 }
 
@@ -339,7 +366,8 @@ void seq_start(void)
     CRITICAL {
         seq_loop = 0;
         phrase_ctr = 0;
-        phase = 0;
+        pphase = 0;
+        pfrac = 0;
         seq_chain_bar = 0;
         if (proj.chain.song) {
             if (proj.chain.pat[seq_chain_pos] >= NUM_PATTERNS) seq_chain_pos = 0;

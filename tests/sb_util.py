@@ -51,7 +51,7 @@ class SB:
         self.cmd("run %d" % n)
         self.frames += n
 
-    def press(self, *buttons, hold=3, after=4):
+    def press(self, *buttons, hold=5, after=4):
         for b in buttons:
             self.cmd("key %s 1" % b)
         self.tick(hold)

@@ -146,6 +146,7 @@ static void adjust(uint8_t i, int8_t d)
         int8_t dd = d;
         if (pmax[i] <= 7) dd = d > 0 ? 1 : -1;
         *p = clampadd(*p, dd, 0, pmax[i]);
+        if (i == 8) seq_set_tempo();        /* gate length lives in the clock */
         break;
     }
     }
