@@ -73,6 +73,8 @@ static uint16_t t1_per, t1_end; static uint8_t t1_shift, t1_on;
 static uint16_t t2_per, t2_end; static uint8_t t2_shift, t2_on;
 static uint8_t  clap_left, clap_timer, clap_env, clap_poly;
 
+int8_t evo_tune_ofs[NUM_LANES];          /* living-song drum tuning drift (not saved) */
+
 void drums_init(void)
 {
     drums_revoice();
@@ -112,7 +114,7 @@ static uint8_t env_voice(uint8_t env, uint8_t lane)
 
 static uint16_t tune_period(uint16_t per, uint8_t lane)
 {
-    int16_t t = (int16_t)proj.drum_tune[lane] - 8;
+    int16_t t = (int16_t)proj.drum_tune[lane] - 8 + evo_tune_ofs[lane];
     int16_t p = (int16_t)per + (t << tune_shift[lane]);
     if (p < 0) p = 0;
     if (p > 2040) p = 2040;
@@ -137,7 +139,7 @@ void drums_revoice(void)
             if (v.f1 > v.f0) v.f1 = v.f0;
             v.tenv = env_voice(d->tenv, l);
             v.nenv = env_voice(d->nenv, l);
-            sh = (int8_t)(d->npoly >> 4) - (((int8_t)proj.drum_tune[l] - 8) >> 1);
+            sh = (int8_t)(d->npoly >> 4) - (((int8_t)proj.drum_tune[l] - 8 + evo_tune_ofs[l]) >> 1);
             if (sh < 0) sh = 0;
             if (sh > 13) sh = 13;
             v.npoly = (uint8_t)((sh << 4) | (d->npoly & 0x0F));

@@ -121,6 +121,16 @@ static void draw_help(void)
 {
     const pattern_t *p = &proj.pat[seq_cur];
     ui_fill(0, 17, SCR_W, 0);
+    if (cy == N_LANES + 7) {             /* EVO: say what it does */
+        static const char * const evo_help[3] = {
+            "STABLE: NO CHANGES  ", "EVOLVES EVERY 4 BARS", "MUTATES EVERY 2 BARS" };
+        ui_text(0, 17, evo_help[proj.gen.mode % 3]);
+        return;
+    }
+    if (cy == N_LANES + 8) {
+        ui_text(0, 17, "MUT: HOW MUCH CHANGE");
+        return;
+    }
     if (cy >= N_LANES) {
         ui_text(0, 17, "</>:SET  A:FILL");
         return;
@@ -181,7 +191,7 @@ static void adjust(uint8_t m, int8_t d)
         proj.synth.bpm = clampadd(proj.synth.bpm, (int8_t)(big ? big * 10 : d), 60, 220);
         seq_set_tempo();
         break;
-    case 7: proj.gen.mode = clampadd(proj.gen.mode, d > 0 ? 1 : -1, 0, 2); evo_state = EVO_IDLE; break;
+    case 7: proj.gen.mode = clampadd(proj.gen.mode, d > 0 ? 1 : -1, 0, 2); evo_state = EVO_IDLE; draw_help(); break;
     default: proj.gen.mutation = clampadd(proj.gen.mutation, d, 0, 15); evo_state = EVO_IDLE; break;
     }
     draw_macro(m);

@@ -3,6 +3,41 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
+## Version 2.3 (2026-11-11)
+
+This version is renumbered to 2.3 to reflect the substantial iterations since 1.0. The previous releases were 1.0 and 1.1; there were no public 2.0–2.2 releases.
+
+- ROM SHA-256: see `docs/TESTING.md`
+
+### Files: NEW · LOAD · SAVE · ABOUT
+
+The SAVE screen is now **FILE**, with a menu:
+
+- **NEW** starts an empty project.
+- **LOAD** lists the eight demo songs and your eight saves. Loading jumps to LIVE and plays.
+- **SAVE** holds the slots. B+A, then A, erases a slot.
+- **ABOUT** has four pages: what ETCH is, what generative music is, who Synth Centric is ("Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator."), and version and credits.
+- A tap of **B** goes back to the menu.
+
+### Living songs (DRIFT redesigned)
+
+Set **EVO** to DRIFT on LIVE (all demo songs start this way). Every 4 bars, **every channel changes a little**:
+
+- one bass change;
+- one hit in each drum lane;
+- a small step of the bass filter and of each drum's tuning.
+
+The randomness comes from the timing of your button presses, so **every listen is different**.
+
+Each channel stays bounded around the original. Each pattern of a song has its own memory (anchor), so a song breathes without wandering off. The sound drift is live-only: it is never saved, and STABLE restores your exact settings.
+
+The LIVE help line now explains EVO: `EVOLVES EVERY 4 BARS`.
+
+### Fixes
+
+- In song mode, evolutions were often skipped, because the chain changes pattern exactly on the phrase boundary. Evolution now targets the pattern that plays next. Measured: 8 evolutions in 8 phrases, where before it was 2.
+- Probability dice are reseeded from the entropy pool at every START, so ghost notes differ between listens too.
+
 ## Version 1.1 (2026-11-10)
 
 - ROM SHA-256: `5f54596038f2dc81caf5dad5545cb2b13bc4e184583b1f092e2e5aebfc147c59`

@@ -34,9 +34,10 @@ extern uint8_t vr_n;
 void vram_copy_asm(void);
 
 uint8_t key_held, key_pressed, key_repeat, key_released;
-static uint8_t key_prev, rep_timer, a_used;
+uint16_t ui_entropy = 0xE7C4;
+static uint8_t key_prev, rep_timer, a_used, b_used;
 
-const char * const scr_names[SCR_COUNT] = { "SYNTH", "TRACK", "LIVE ", "GEN  ", "SONG ", "SAVE " };
+const char * const scr_names[SCR_COUNT] = { "SYNTH", "TRACK", "LIVE ", "GEN  ", "SONG ", "FILE " };
 extern uint8_t app_screen;
 
 static char msg_buf[SCR_W + 1];
@@ -210,6 +211,7 @@ void ui_row1(const char *s)
         while (s[i] && i < SCR_W) { row1_buf[i] = s[i]; i++; }
         while (i < SCR_W) row1_buf[i++] = ' ';
         row1_buf[SCR_W] = 0;
+        msg_timer = 0;                   /* a new title replaces a passing message */
     }
     if (!msg_timer) row1_draw();
 }
@@ -328,8 +330,12 @@ void ui_input(void)
     } else {
         rep_timer = 0;
     }
+    /* every press stirs the entropy pool with the exact timing of a human hand */
+    if (key_pressed) ui_entropy = (uint16_t)((ui_entropy << 5) ^ (ui_entropy >> 3) ^ DIV_REG ^ ((uint16_t)TIMA_REG << 8) ^ sys_time ^ key_pressed);
     /* A pressed together with B or SELECT is a combo, never a plain tap */
     if (key_pressed & J_A) a_used = (j & (J_B | J_SELECT)) ? 1 : 0;
+    if (key_pressed & J_B) b_used = (j & (J_A | J_SELECT)) ? 1 : 0;
+    else if ((j & J_B) && (key_pressed & ~J_B)) b_used = 1;   /* B used as a modifier */
     if ((j & J_A) && (j & (J_B | J_SELECT))) a_used = 1;
     key_prev = j;
     key_held = j;
@@ -376,6 +382,11 @@ uint8_t ui_page(void)
 {
     if (!(key_held & J_B) || (key_held & (J_A | J_SELECT))) return 0;
     return key_repeat & K_DPAD;
+}
+
+uint8_t ui_b_tap(void)
+{
+    return (key_released & J_B) && !b_used && !(key_held & J_SELECT);
 }
 
 void ui_a_consume(void)

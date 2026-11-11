@@ -26,20 +26,20 @@ def sel(e, d):
     e.hold("select"); e.press(d, hold=5, after=3); e.release("select")
 
 
-def load_track(e, t, cur_row):
-    """From LIVE: go to SAVE, move to track row, A A, back to LIVE."""
+def load_track(e, t, menu_cur):
+    """From LIVE: FILE > LOAD > demo t, A A (ETCH returns to LIVE by itself).
+    menu_cur: where the FILE menu cursor was left (0 NEW at boot, 1 LOAD after a load)."""
     for _ in range(3):
-        sel(e, "right")                 # LIVE -> GEN -> SONG -> SAVE
+        sel(e, "right")                 # LIVE -> GEN -> SONG -> FILE
     e.tick(10)
-    target = 8 + t
-    while cur_row < target:
-        e.press("down", hold=3, after=2); cur_row += 1
-    while cur_row > target:
-        e.press("up", hold=3, after=2); cur_row -= 1
+    for _ in range((1 - menu_cur) % 4):
+        e.press("down", hold=3, after=2)
+    e.press("a", hold=3, after=3)       # open LOAD (cursor on D1)
+    for _ in range(t):
+        e.press("down", hold=3, after=2)
     e.press("a", hold=3, after=3); e.press("a", hold=3, after=3)
-    for _ in range(3):
-        sel(e, "left")                  # SAVE -> LIVE
-    return cur_row
+    e.tick(10)
+    return 1
 
 
 def sweep(e, button, frames):

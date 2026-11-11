@@ -131,5 +131,11 @@ void storage_erase(uint8_t slot) ETCH_BANKED
     ENABLE_RAM;
     b = slot_base(slot);
     b[0] = 0; b[1] = 0; b[2] = 0; b[3] = 0;
+    {
+        uint8_t *m;
+        SWITCH_RAM(3);
+        m = (uint8_t *)(0xA000 + META_OFF);
+        if (m[0] == 'E' && m[1] == 'M' && m[2] == slot) m[0] = 0;   /* no longer "last saved" */
+    }
     DISABLE_RAM;
 }

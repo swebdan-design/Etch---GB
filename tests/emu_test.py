@@ -73,10 +73,18 @@ def sel(et, d):
     et.e.tick(20)
 
 
-def to_save(et):
-    """LIVE -> GEN -> SONG -> SAVE"""
+def to_file(et):
+    """LIVE -> GEN -> SONG -> FILE"""
     for _ in range(3):
         sel(et, "right")
+
+
+def file_open(et, item, menu_cur=0):
+    """from LIVE open FILE > item (0 NEW, 1 LOAD, 2 SAVE, 3 ABOUT)"""
+    to_file(et)
+    for _ in range((item - menu_cur) % 4):
+        et.e.press("down")
+    et.e.press("a"); et.e.tick(20)
 
 
 def rms(a):
@@ -161,7 +169,7 @@ def main():
     x, sr = capture(et, os.path.join(art, "live_groove.wav"), 600)
     rec("audio output present during playback", rms(x) > 300, "rms=%.0f" % rms(x))
 
-    # ---- screens reachable: SYNTH < TRACK < LIVE > GEN > SONG > SAVE --------
+    # ---- screens reachable: SYNTH < TRACK < LIVE > GEN > SONG > FILE --------
     sel(et, "left")
     rec("SELECT+LEFT from LIVE -> TRACK", scr(et) == "TRACK", et.e.screen_text()[0])
     et.e.tick(80)
@@ -176,12 +184,12 @@ def main():
     rec("SELECT+RIGHT from SYNTH -> TRACK", scr(et) == "TRACK")
     sel(et, "right")
     rec("SELECT+RIGHT from TRACK -> LIVE", scr(et) == "LIVE")
-    for name in ("GEN", "SONG", "SAVE"):
+    for name in ("GEN", "SONG", "FILE"):
         sel(et, "right")
         rec("SELECT+RIGHT reaches %s" % name, scr(et) == name, et.e.screen_text()[0])
         et.e.screenshot(os.path.join(art, "screen_%s.png" % name.lower()))
     sel(et, "right")
-    rec("SAVE is the right end (no wrap)", scr(et) == "SAVE")
+    rec("FILE is the right end (no wrap)", scr(et) == "FILE")
     for _ in range(3):
         sel(et, "left")
     rec("back to LIVE", scr(et) == "LIVE")
@@ -373,6 +381,7 @@ def main():
     # ---- CORROSION on a fresh boot --------------------------------------------
     et = Etch(rom)
     et.boot_to_live()
+    et.pset(CHAIN + 32, 0)                                  # loop mode: one pattern
     cur = et.e.rd("seq_cur")
     before = et.pat(cur)
     et.pset(GEN + G_MODE, 2); et.pset(GEN + G_MUT, 12)        # CORRODE
@@ -412,55 +421,98 @@ def main():
     rec("SELECT+A requests an evolution (commits at bar line)", et.e.rd("evo_commits") != c0)
     et.stop()
 
+    # ---- FILE menu, ABOUT ---------------------------------------------------
+    et = Etch(rom)
+    et.boot_to_live()
+    to_file(et)
+    txt = "\n".join(et.e.screen_text())
+    rec("FILE menu offers NEW / LOAD / SAVE / ABOUT",
+        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.3" in txt and "by Synth Centric" in txt)
+    for _ in range(3):
+        et.e.press("down")
+    et.e.press("a"); et.e.tick(10)
+    rec("ABOUT page 1 explains the product", "acid synthesizer" in "\n".join(et.e.screen_text()))
+    et.e.screenshot(os.path.join(art, "screen_about1.png"))
+    et.e.press("right"); et.e.tick(5)
+    rec("ABOUT page 2 explains generative music", "Generative music is" in "\n".join(et.e.screen_text()))
+    et.e.press("right"); et.e.tick(5)
+    rows = [r.strip() for r in et.e.screen_text()[4:10]]
+    bio = " ".join(rows)
+    rec("ABOUT page 3: the Synth Centric bio, verbatim",
+        "Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator." in bio, bio)
+    et.e.screenshot(os.path.join(art, "screen_about3.png"))
+    et.e.press("b"); et.e.tick(5)
+    rec("B returns from ABOUT to the FILE menu", "demos/saves" in "\n".join(et.e.screen_text()))
+    # NEW (A, A) -> empty project on LIVE
+    for _ in range(3):
+        et.e.press("up")
+    et.e.press("a"); et.e.press("a"); et.e.tick(20)
+    nm = et.pb(NAME, 10).decode("ascii", "replace").strip()
+    rec("NEW (A, A) makes an empty project and returns to LIVE",
+        nm == "UNTITLED" and scr(et) == "LIVE" and all((f & 3) == 0 for f in et.pat(0)[16:32]), nm)
+    et.stop()
+
     # ---- SRAM persistence ---------------------------------------------------
     bat = os.path.join(art, "etch_test.sav")
     if os.path.exists(bat):
         os.remove(bat)
     et = Etch(rom)
     et.boot_to_live()
-    # go to SAVE screen
-    to_save(et)
-    rec("SAVE screen reached", scr(et) == "SAVE")
+    et.pset(SYNTH + S_CUT, 23); et.pset(SYNTH + S_BPM, 141)
+    file_open(et, 2)
+    rec("FILE > SAVE opens the slot list", "SAVE  B+A:ERASE" in et.e.screen_text()[1], et.e.screen_text()[1])
     txt = "\n".join(et.e.screen_text())
     rec("blank SRAM shows empty slots (not corrupt)", "--empty--" in txt and "CORRUPT" not in txt)
-    # make the project distinctive, then save to slot 3 (index 2)
-    et.pset(SYNTH + S_CUT, 23); et.pset(SYNTH + S_BPM, 141)
-    marker = et.pat(1)
+    et.e.screenshot(os.path.join(art, "screen_file_save.png"))
     et.e.press("down"); et.e.press("down")
     et.e.press("a"); et.e.tick(20)
     txt = "\n".join(et.e.screen_text())
-    rec("save to empty slot reports verified", "SAVED + VERIFIED" in txt)
-    projbytes = et.pb(0, 73 + 64 * 32)
+    rec("save to empty slot S3 reports verified", "SAVED + VERIFIED" in txt)
+    projbytes = et.pb(0, 73 + 64 * 32 + 12)
     et.e.save_battery(bat)
     et.stop()
 
     et = Etch(rom, bat)
     et.boot_to_live()
-    to_save(et)
+    et.e.press("start"); et.e.tick(5)                      # stop: LOAD must start playback
+    file_open(et, 1)
+    rec("FILE > LOAD lists demos and saves", "D1 FIRST CONTACT" in "\n".join(et.e.screen_text()))
+    et.e.screenshot(os.path.join(art, "screen_file_load.png"))
     txt = "\n".join(et.e.screen_text())
     rec("slot persists across power cycle", "S3 CONTACT" in txt or "S3*CONTACT" in txt, [r for r in et.e.screen_text() if r.startswith("S3")])
-    et.e.press("down"); et.e.press("down")
-    et.e.press("left")                                     # action LOAD
+    for _ in range(10):
+        et.e.press("down")                                 # D1..D8, S1, S2 -> S3
     et.e.press("a"); et.e.press("a"); et.e.tick(20)
-    loaded = et.pb(0, 73 + 64 * 32)
+    loaded = et.pb(0, 73 + 64 * 32 + 12)
     rec("loaded project identical to saved project", loaded == projbytes,
         "cut=%d bpm=%d" % (loaded[SYNTH + S_CUT], loaded[SYNTH + S_BPM]))
+    rec("loading goes to LIVE and plays", scr(et) == "LIVE" and et.e.rd("seq_playing") == 1)
+    et.stop()
+
+    # erase from SAVE (B+A, A)
+    et = Etch(rom, bat)
+    et.boot_to_live()
+    file_open(et, 2)
+    et.e.press("down"); et.e.press("down")
+    et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
+    et.e.press("a"); et.e.tick(20)
+    rec("SAVE: B+A, A erases a slot", "S3 --empty--" in "\n".join(et.e.screen_text()), [r for r in et.e.screen_text() if r.startswith("S3")])
     et.stop()
 
     # corrupt one data byte in slot 3 -> must be reported and refused
     data = bytearray(open(bat, "rb").read())
-    off = 0x1000 * 0 + 0x0000          # slot index 2 -> bank 1 offset 0
     off = 8192 * 1 + 0 + 10 + 100
     data[off] ^= 0x5A
     bad = bat + ".bad"
     open(bad, "wb").write(data)
     et = Etch(rom, bad)
     et.boot_to_live()
-    to_save(et)
+    file_open(et, 1)
     txt = "\n".join(et.e.screen_text())
     rec("corrupted slot detected (checksum)", "CORRUPT" in txt)
     cut_before = et.pb(SYNTH + S_CUT)[0]
-    et.e.press("down"); et.e.press("down"); et.e.press("left")
+    for _ in range(10):
+        et.e.press("down")
     et.e.press("a"); et.e.press("a"); et.e.tick(20)
     rec("corrupted slot refused, project untouched", et.pb(SYNTH + S_CUT)[0] == cut_before)
     et.stop()
@@ -487,34 +539,59 @@ def main():
     et = Etch(rom, v1)
     et.boot_to_live()
     et.pset(PAT + 64 * 32, 3)            # scribble on drum tune: load must reset it
-    to_save(et)
+    file_open(et, 1)
     txt = "\n".join(et.e.screen_text())
     rec("v1 (ETCH 1.0) slot is recognised", "CONTACT" in txt and "CORRUPT" not in txt)
-    et.e.press("down"); et.e.press("down"); et.e.press("left")
+    for _ in range(10):
+        et.e.press("down")
     et.e.press("a"); et.e.press("a"); et.e.tick(20)
     rec("v1 slot loads with default drum voicing",
         et.pb(SYNTH + S_BPM)[0] == 141 and list(et.pb(PAT + 64 * 32, 12)) == [8] * 8 + [15] * 4,
         "bpm=%d voicing=%s" % (et.pb(SYNTH + S_BPM)[0], list(et.pb(PAT + 64 * 32, 12))))
     et.stop()
 
-    # ---- every ROM track loads through the UI and plays ----------------------
+    # ---- every demo song loads through FILE > LOAD and plays -----------------
     et = Etch(rom)
     et.boot_to_live()
-    to_save(et)
     names = ["CONTACT", "CONCRETE", "STATIC", "CORROSION", "NIGHTSHIFT", "WAREHOUSE", "SIGNALLOSS", "AFTERIMAGE"]
     for t in range(8):
-        et.e.press("down" if t else "down")
-        if t == 0:
-            for _ in range(7):
-                et.e.press("down")          # S1..S8 -> T1
+        file_open(et, 1, menu_cur=0 if t == 0 else 1)      # FILE remembers LOAD after a load
+        for _ in range(t):
+            et.e.press("down")
         et.e.press("a"); et.e.press("a"); et.e.tick(30)
         nm = et.pb(NAME, 10).decode("ascii", "replace").strip()
         bpm = et.pb(SYNTH + S_BPM)[0]
         x, sr = capture(et, os.path.join(art, "track%d.wav" % (t + 1)), 300)
-        rec("track T%d %-10s loads and plays" % (t + 1, names[t]),
-            nm == names[t] and et.e.rd("seq_playing") == 1 and rms(x) > 400,
+        rec("demo D%d %-10s loads and plays" % (t + 1, names[t]),
+            nm == names[t] and et.e.rd("seq_playing") == 1 and scr(et) == "LIVE" and rms(x) > 400,
             "name=%s bpm=%d rms=%.0f" % (nm, bpm, rms(x)))
     et.stop()
+
+    # ---- living songs: DRIFT evolves every channel, differently each listen --
+    runs = []
+    for wait in (240, 251):
+        et = Etch(rom)
+        et.e.tick(wait)
+        et.e.press("start"); et.e.tick(30)
+        orig = [et.pat(i) for i in range(4)]
+        c0 = et.e.rd("evo_commits")
+        c = et.e.cycles()
+        et.e.tick(60 * 62)
+        secs = (et.e.cycles() - c) / 8388608.0
+        commits = (et.e.rd("evo_commits") - c0) % 256
+        now = [et.pat(i) for i in range(4)]
+        runs.append((now, commits, secs, orig, list(et.e.peek(et.e.sym("evo_tune_ofs"), 4)), et.e.rd("evo_cut_ofs")))
+        et.stop()
+    now, commits, secs, orig, tune, cut = runs[0]
+    phrases = secs / (16 * 60.0 / 124)                     # FIRST CONTACT: 124 BPM, DRIFT
+    rec("DRIFT on the demo evolves every 4 bars (also in song mode)", commits >= int(phrases) - 1,
+        "%d evolutions in %.0f s (%.1f phrases)" % (commits, secs, phrases))
+    bass = sum(1 for i in range(4) if orig[i][:48] != now[i][:48])
+    lanes = [any(orig[i][48 + 2 * l:50 + 2 * l] != now[i][48 + 2 * l:50 + 2 * l] for i in range(4)) for l in range(4)]
+    rec("every channel evolves: bass in every pattern, all 4 drum lanes", bass == 4 and all(lanes),
+        "bass changed in %d/4 patterns, lanes %s" % (bass, lanes))
+    rec("two listens evolve differently (entropy from button timing)", runs[0][0] != runs[1][0],
+        "sound drift run1 cut %d tune %s / run2 cut %d tune %s" % (runs[0][5], runs[0][4], runs[1][5], runs[1][4]))
 
     # ---- long run --------------------------------------------------------------
     et = Etch(rom)

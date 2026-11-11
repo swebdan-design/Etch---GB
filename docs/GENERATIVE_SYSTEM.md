@@ -72,7 +72,7 @@ Entering the same code (digit by digit on the CODE row) and pressing GEN ALL on 
 
 ## 3. Evolution (MODE)
 
-The main loop prepares the next mutation of the *playing* pattern in the background (`evo_service` in `src/main.c`). It works on a working copy, so pattern memory is never half-modified. The timer interrupt **commits** the candidate at the gate point of step 16, so the new material starts exactly on the next downbeat. That moment is a tick with no step work, which keeps the audio timing stable.
+The main loop prepares the next mutation in the background (`evo_service` in `src/main.c`), for the pattern that will play after the next bar line. In song mode the chain usually changes pattern exactly on a phrase boundary, so targeting the next pattern matters. It works on a working copy, so pattern memory is never half-modified. The timer interrupt **commits** the candidate at the gate point of step 16, so the new material starts exactly on the next downbeat. That moment is a tick with no step work, which keeps the audio timing stable.
 
 When a candidate is committed:
 
@@ -83,7 +83,7 @@ When a candidate is committed:
 | Mode | When | Budget per evolution | Character |
 |---|---|---|---|
 | **STABLE** | never (except on request) | – | Pattern memory is never rewritten. Probability and conditions still vary playback. |
-| **DRIFT** | every 4 bars (one phrase) | 1 + MUTATE/6 operations (1–3) | Restrained variation **around an anchor** |
+| **DRIFT** ("living song") | every 4 bars (one phrase) | **Every channel:** 1 bass operation (2 at MUTATE ≥ 12), one hit in each unlocked drum lane, and a sound-drift step | Subtle, constant variation **around an anchor**, different on every listen |
 | **CORRODE** | every 2 bars | 2 + MUTATE/3 operations (2–7) | The line keeps evolving into new material descended from the original |
 | *request* (SELECT+A) | next bar line | as the current mode; STABLE uses DRIFT | Manual |
 
@@ -107,17 +107,23 @@ When a candidate is committed:
 
 ETCH keeps evolution coherent with these rules:
 
-- **Anchor (DRIFT):** the anchor is the pattern as it was when it became the evolving pattern or was last edited by hand. DRIFT may never be more than `2 + MUTATE/3` events away from its anchor. Once that limit is reached, the operator becomes RECALL. DRIFT therefore *wanders around* your groove and keeps coming back.
+- **Anchors, per pattern (DRIFT):** the anchor is the pattern as it was when DRIFT first touched it, or when you last edited it by hand. Up to 8 patterns keep their own anchor (a 512-byte cache), so every pattern of a song breathes around its own original.
+- **Per-channel bounds (DRIFT):** the bass may differ from its anchor by at most `2 + MUTATE/6` steps. Each drum lane may differ by at most `1 + (MUTATE+4)/8` hits. When a channel reaches its bound, that channel's change for the phrase becomes a recall toward the anchor. Every channel still moves every phrase, but nothing wanders off.
+- **Single-step operators only (DRIFT):** accent move, rest toggle, scale step, octave, slide. The multi-step operators (MOTIF, MEMORY, ROTATE) belong to CORRODE.
+- **Sound drift:** after each committed evolution, the bass cutoff takes a random step within ±2 (CORRODE ±5), and each drum lane's tuning within ±1 (CORRODE ±2). These are live offsets in the engine (`evo_cut_ofs`, `evo_tune_ofs`). They are never stored in the project, and they reset to zero in STABLE.
+- **Randomness:** evolution draws from an entropy pool stirred by the exact timing (DIV, TIMA, frame counter) of every button press, including the START press on the title screen. The probability dice are reseeded the same way at every START. Two listeners, or two listens, therefore evolve differently. Generation from a seed code stays fully reproducible, because it uses the seed, not the pool.
 - **Downbeat and tonal centre:** step 1 keeps its pitch. DRIFT never rests it and never removes template kicks or backbeats.
 - **Motif propagation (CORRODE):** changing the motif changes all its repetitions together, so the line can transform completely while staying internally repetitive.
 - **Homeostasis:** DENSITY and ACCENT define targets that the rest and accent operators steer toward. This prevents slow drift into "every step an accented note" or into silence.
 
 **Measured** (host tests; 30 grooves × 16 generations, intensity 8):
 
-| | Changes per generation | Divergence from the original | Best-period repetition |
-|---|---|---|---|
-| DRIFT | 2.2 | **4.3 events** (bounded) | 0.54 |
-| CORRODE | 5.2 | **22.1 events** | 0.85 |
+| | Channels changed per phrase | Divergence from the original | Bass steps changed | Best-period repetition |
+|---|---|---|---|---|
+| DRIFT | **all 5 in 480 / 480 phrases** | **7.4 events** (max 12, bounded) | 2.4 | 0.46 |
+| CORRODE | – | **24.9 events** | 14.0 | 0.60 |
+
+DRIFT's repetition (0.46) is lower than a fresh line's (0.88) because a few steps of each bar are always varied. That is the "subtle change every 4 bars" at work. Locked lanes are never touched (host test 8b).
 
 Freshly generated lines have an average repetition of 0.88. An example CORRODE lineage from the test output (A minor, ACID):
 
@@ -125,10 +131,10 @@ Freshly generated lines have an average repetition of 0.88. An example CORRODE l
 g0  A2 .  E3 .  | .  .  E3 =  | .  .  E3 =  | A2s A3! .  .
 g4  A2 D3 E3! . | A2 D3 E3! . | .  E2 E3! = | A2! D3 E3! .
 g8  A2 C3 E2! . | A2 .  E3! . | A2 C3 E2! . | .  C3s E3! .
-g12 A2 C3 E2! . | A2 C3 E2! . | A2 C4s E2! .| .  A2 C3 E2!
+g12 A2 C3 E2  . | A2 C3 E2  . | A2 C3 E2  . | A2 C3 E2  .
 ```
 
-The riff transforms (A–E → A–D–E → A–C–E with moving accents) without losing its pulse or key.
+The riff transforms (A–E → A–D–E → A–C–E, with accents appearing and moving, then settling into a hypnotic A–C–E loop) without losing its pulse or key.
 
 ### Locks and undo guarantees
 

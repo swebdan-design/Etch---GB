@@ -381,18 +381,8 @@ enum {
 static const uint8_t op_w_drift[OP_COUNT]   = { 3, 2, 2, 2, 2, 3, 1, 1, 0, 0, 1 };
 static const uint8_t op_w_corrode[OP_COUNT] = { 2, 2, 2, 2, 2, 3, 3, 5, 1, 1, 0 };
 
-static uint8_t divergence(const pattern_t *p, const pattern_t *q)
-{
-    uint8_t s, l, d = 0;
-    for (s = 0; s < 16; s++)
-        if (p->note[s] != q->note[s] || p->flags[s] != q->flags[s] || p->prob[s] != q->prob[s]) d++;
-    for (l = 0; l < NUM_LANES; l++) {
-        uint16_t x = p->drum[l] ^ q->drum[l];
-        while (x) { d = (uint8_t)(d + (x & 1)); x >>= 1; }
-    }
-    return d;
-}
 static const pattern_t *anchor;
+static pattern_t scratch;
 
 static uint8_t bass_free(const pattern_t *p, uint8_t s)
 {
@@ -420,10 +410,76 @@ static uint8_t accent_count(const pattern_t *p)
     return n;
 }
 
+/* Toggle one hit in lane l.  Toggles prefer the style's variation positions;
+ * the template kick and backbeat are structural and stay (memory) unless
+ * corroding. */
+static void drum_touch(pattern_t *p, uint8_t l, uint8_t corrode)
+{
+    const grammar_t *gr = &grammars[p->style % STYLE_COUNT];
+    uint8_t t, s;
+    for (t = 0; t < 12; t++) {
+        uint16_t bit;
+        s = corr_randn(16);
+        bit = (uint16_t)1 << s;
+        if ((l == LANE_KICK || l == LANE_SNARE) && (gr->drum[l] & bit) && !corrode) continue;
+        if (!(gr->dvar[l] & bit) && !(p->drum[l] & bit) && t < 6) continue;
+        p->drum[l] ^= bit;
+        return;
+    }
+}
+
+/* Musical memory, per channel: restore one bass step from the anchor. */
+static uint8_t recall_bass(pattern_t *p)
+{
+    uint8_t k, s = corr_randn(16);
+    if (!anchor) return 0;
+    for (k = 0; k < 16; k++, s = (uint8_t)((s + 1) & 15)) {
+        if (!bass_free(p, s)) continue;
+        if (p->note[s] != anchor->note[s] || (p->flags[s] & ~STEP_LOCK) != (anchor->flags[s] & ~STEP_LOCK)
+            || p->prob[s] != anchor->prob[s]) {
+            p->note[s] = anchor->note[s];
+            p->flags[s] = (uint8_t)((anchor->flags[s] & ~STEP_LOCK) | (p->flags[s] & STEP_LOCK));
+            p->prob[s] = anchor->prob[s];
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* ... and one hit of drum lane l. */
+static uint8_t recall_lane(pattern_t *p, uint8_t l)
+{
+    uint16_t x;
+    uint8_t k, s = corr_randn(16);
+    if (!anchor) return 0;
+    x = p->drum[l] ^ anchor->drum[l];
+    if (!x) return 0;
+    for (k = 0; k < 16; k++, s = (uint8_t)((s + 1) & 15)) {
+        if (x & ((uint16_t)1 << s)) { p->drum[l] ^= (uint16_t)1 << s; return 1; }
+    }
+    return 0;
+}
+
+static uint8_t bass_divergence(const pattern_t *p, const pattern_t *q)
+{
+    uint8_t s, d = 0;
+    for (s = 0; s < 16; s++)
+        if (p->note[s] != q->note[s] || p->flags[s] != q->flags[s] || p->prob[s] != q->prob[s]) d++;
+    return d;
+}
+
+static uint8_t lane_divergence(const pattern_t *p, const pattern_t *q, uint8_t l)
+{
+    uint16_t x = p->drum[l] ^ q->drum[l];
+    uint8_t d = 0;
+    while (x) { d = (uint8_t)(d + (x & 1)); x >>= 1; }
+    return d;
+}
+
 static void apply_op(pattern_t *p, const gen_t *g, uint8_t op, uint8_t corrode)
 {
     uint8_t s, t, l;
-    const grammar_t *gr = &grammars[p->style % STYLE_COUNT];
+    
     /* homeostasis: GEN DENSITY and ACCENT set the targets evolution orbits */
     uint8_t notes = pattern_note_count(p);
     uint8_t tgt_notes = (uint8_t)(3 + (g->density * 10) / 15);
@@ -490,17 +546,7 @@ static void apply_op(pattern_t *p, const gen_t *g, uint8_t op, uint8_t corrode)
             if (!(p->lock & ((PLOCK_LANE0 << l) | PLOCK_ALL))) break;
         }
         if (t == NUM_LANES) break;
-        /* toggles prefer the style's variation positions; the kick and the
-         * backbeat on the beat are structural and stay (memory) */
-        for (t = 0; t < 8; t++) {
-            uint16_t bit;
-            s = corr_randn(16);
-            bit = (uint16_t)1 << s;
-            if ((l == LANE_KICK || l == LANE_SNARE) && (gr->drum[l] & bit) && !corrode) continue;
-            if (!(gr->dvar[l] & bit) && !(p->drum[l] & bit) && t < 5) continue;
-            p->drum[l] ^= bit;
-            break;
-        }
+        drum_touch(p, l, corrode);
         break;
     case OP_MEMORY: {
         /* re-establish repetition: copy beat 1 onto the most divergent beat */
@@ -568,28 +614,14 @@ static void apply_op(pattern_t *p, const gen_t *g, uint8_t op, uint8_t corrode)
         p->note[base] = n0; p->flags[base] = f0; p->prob[base] = p0;
         break;
     }
-    case OP_RECALL: {
+    case OP_RECALL:
         /* musical memory: restore one bass step or drum hit from the anchor */
-        uint8_t k;
-        if (!anchor) break;
-        s = corr_randn(16);
-        for (k = 0; k < 16; k++, s = (uint8_t)((s + 1) & 15)) {
-            if (!bass_free(p, s)) continue;
-            if (p->note[s] != anchor->note[s] || (p->flags[s] & ~STEP_LOCK) != (anchor->flags[s] & ~STEP_LOCK)
-                || p->prob[s] != anchor->prob[s]) {
-                p->note[s] = anchor->note[s];
-                p->flags[s] = (uint8_t)((anchor->flags[s] & ~STEP_LOCK) | (p->flags[s] & STEP_LOCK));
-                p->prob[s] = anchor->prob[s];
-                return;
-            }
-        }
+        if (recall_bass(p)) break;
         for (l = 0; l < NUM_LANES; l++) {
-            uint16_t x = p->drum[l] ^ anchor->drum[l];
-            if (!x || (p->lock & (PLOCK_LANE0 << l))) continue;
-            for (k = 0; k < 16; k++) if (x & ((uint16_t)1 << k)) { p->drum[l] ^= (uint16_t)1 << k; return; }
+            if (p->lock & (PLOCK_LANE0 << l)) continue;
+            if (recall_lane(p, l)) break;
         }
         break;
-    }
     case OP_PROB:
         s = pick_step(p, STEP_NOTE, 1);
         if (s == 0xFF) break;
@@ -624,17 +656,49 @@ uint8_t corr_mutate(pattern_t *dst, const pattern_t *src, const pattern_t *anc,
      * style vocabulary in that key */
     build_vocab(g, &grammars[src->style % STYLE_COUNT]);
 
-    for (i = 0; i < budget; i++) {
-        uint8_t r = corr_randn(wsum);
-        for (op = 0; op < OP_COUNT; op++) {
-            if (r < w[op]) break;
-            r = (uint8_t)(r - w[op]);
+    if (mode == EVO_DRIFT) {
+        /* DRIFT ("living song"): every phrase touches EVERY channel a little.
+         * The bass gets 1-2 small operations and each unlocked drum lane one
+         * hit.  Each channel has its own bound around the anchor; once a
+         * channel reaches it, its change becomes a recall instead, so the
+         * song breathes around itself and never wanders off. */
+        uint8_t bmax = (uint8_t)(2 + intensity / 6);
+        uint8_t dmax = (uint8_t)(1 + (intensity + 4) / 8);
+        uint8_t bass_ops = (uint8_t)(1 + (intensity >= 12));
+        for (i = 0; i < bass_ops; i++) {
+            uint8_t tries;
+            for (tries = 0; tries < 4; tries++) {
+                uint8_t r = corr_randn(wsum);
+                for (op = 0; op < OP_COUNT; op++) {
+                    if (r < w[op]) break;
+                    r = (uint8_t)(r - w[op]);
+                }
+                /* subtle: only single-step operators */
+                if (op == OP_DRUM || op == OP_RECALL || op == OP_MEMORY || op == OP_MOTIF ||
+                    op == OP_ROTATE || op == OP_PROB) op = OP_NOTE_STEP;
+                if (anchor && bass_divergence(dst, anchor) >= bmax) {
+                    if (recall_bass(dst)) break;
+                    op = OP_ACC_MOVE;
+                }
+                memcpy(&scratch, dst, sizeof(pattern_t));
+                apply_op(dst, g, op, 0);
+                if (memcmp(&scratch, dst, 48)) break;       /* something changed */
+            }
         }
-        /* DRIFT never strays further than a few events from its anchor */
-        if (mode == EVO_DRIFT && anchor &&
-            divergence(dst, anchor) >= (uint8_t)(2 + intensity / 3))
-            op = OP_RECALL;
-        apply_op(dst, g, op, mode == EVO_CORRODE);
+        for (l = 0; l < NUM_LANES; l++) {
+            if (src->lock & (PLOCK_LANE0 << l)) continue;
+            if (anchor && lane_divergence(dst, anchor, l) >= dmax && recall_lane(dst, l)) continue;
+            drum_touch(dst, l, 0);
+        }
+    } else {
+        for (i = 0; i < budget; i++) {
+            uint8_t r = corr_randn(wsum);
+            for (op = 0; op < OP_COUNT; op++) {
+                if (r < w[op]) break;
+                r = (uint8_t)(r - w[op]);
+            }
+            apply_op(dst, g, op, 1);
+        }
     }
 
     pattern_sanitize(dst);

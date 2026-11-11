@@ -1,7 +1,7 @@
 # ETCH — A Generative Acid Machine
 ### by Synth Centric
 
-**User Manual — version 1.1**
+**User Manual — version 2.3**
 
 ![ETCH title screen](images/screen_title.png)
 
@@ -11,7 +11,11 @@
 
 ETCH turns a Game Boy into an acid bass synthesizer, a four-lane drum machine, a 16-step sequencer and a generative composer.
 
-It is also a **Synth Centric music release**. The cartridge holds eight tracks. Each one is a starting point that you can play as written, reshape, mutate and save as your own version. The instrument itself is the artwork, so every copy will end up sounding different.
+It is also a **Synth Centric music release**. The cartridge holds eight demo songs. Each one is a starting point that you can play as written, reshape, mutate and save as your own version. The instrument itself is the artwork.
+
+The demo songs are **living songs**: they start in DRIFT mode, so every four bars every channel changes a little. The changes come from real randomness — the timing of your button presses — so no two listens are the same.
+
+**Who made it.** Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator. ETCH is a Synth Centric release.
 
 > *A machine that makes acid music. A machine that slowly rewrites itself.*
 
@@ -56,10 +60,10 @@ ETCH has so far been verified in emulators only. See `HARDWARE_COMPATIBILITY.md`
 ### The screen row
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  SAVE
+ SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE
 ```
 
-**LIVE** is home. **SELECT + LEFT/RIGHT** moves along the row and stops at either end. Moving left takes you deeper into the music: first the step editor (TRACK), then the sound of each channel (SYNTH). Moving right takes you to the tools: the composer (GEN), the arrangement and tempo (SONG), and storage (SAVE). Each move briefly shows the neighbouring screens on line 2.
+**LIVE** is home. **SELECT + LEFT/RIGHT** moves along the row and stops at either end. Moving left takes you deeper into the music: first the step editor (TRACK), then the sound of each channel (SYNTH). Moving right takes you to the tools: the composer (GEN), the arrangement and tempo (SONG), and your files (FILE: new, load, save, about). Each move briefly shows the neighbouring screens on line 2.
 
 ### One way of editing everywhere
 
@@ -299,7 +303,7 @@ The **CODE** row shows a 12-digit code such as `0F1C-9009-5870`. It packs the se
 
 To recreate a groove, select the CODE row, step through the digits with LEFT/RIGHT, set each with **A + UP/DOWN**, then press **GEN ALL** on an unlocked pattern. You get exactly the same initial groove, every time, on every Game Boy.
 
-**What a code does not store:** manual edits, kit changes, sound settings, locks and evolution history. Use the SAVE screen to keep those.
+**What a code does not store:** manual edits, kit changes, sound settings, locks and evolution history. Use FILE > SAVE to keep those.
 
 ---
 
@@ -310,10 +314,15 @@ To recreate a groove, select the CODE row, step through the digits with LEFT/RIG
 | Mode | Behaviour |
 |---|---|
 | **STABLE** | The pattern stays exactly as written. Probability and conditions still add variation as it plays. |
-| **DRIFT** | Every 4 bars, a few small changes: an accent moves, a note steps within the scale, a hat is added. DRIFT **remembers your groove**. It never strays more than a few events from it and keeps drifting back. This is the right mode for long hypnotic sets. |
+| **DRIFT** | **A living song.** Every 4 bars, **every channel changes a little**: <ul><li>One small bass change: a note steps within the scale, an accent moves, a slide appears…</li><li>One hit in each drum lane.</li><li>A small step in the sound: bass filter, drum tuning.</li></ul> DRIFT **remembers your groove**, separately for every pattern of the song. Each channel can only stray a short way from the original before its changes start leading back. The randomness comes from the timing of your button presses, so every listen is different. All the demo songs start in DRIFT. |
 | **CORRODE** | Every 2 bars, bigger changes. The motif itself mutates, and its repetitions change with it, so over a few minutes the line becomes something new that is clearly descended from where it started. |
 
-**MUT** (0–15) sets how many changes happen each time.
+**MUT** (0–15) sets how far things may wander: with higher MUT the bass makes more changes and every lane may stray further.
+
+The sound drift (filter and drum tuning) is applied live and is **never written into your settings**: switch EVO to STABLE and the sound returns to exactly what you set.
+
+> **Workflow: a different song every listen**
+> Load a demo (FILE > LOAD, or just press START at power-on). On LIVE, put the cursor on **EVO**: the bottom line reads `EVOLVES EVERY 4 BARS`. Leave it running. If a moment is too good to lose, set EVO to STABLE to freeze it, and FILE > SAVE it.
 
 Even in STABLE, **SELECT + A** evolves once, on demand, at the next bar line.
 
@@ -340,21 +349,30 @@ Locked material is *guaranteed* unchanged. It is restored bit-for-bit after ever
 
 ---
 
-## 13. Saving and loading — the SAVE screen
+## 13. Projects, demo songs and saving — the FILE screen
 
-![SAVE](images/screen_save.png)
+![FILE](images/screen_file.png)
 
-There are eight **slots** (S1–S8) and the eight **ROM tracks** (T1–T8).
+FILE is the last screen on the right (SELECT+RIGHT three times from LIVE). It opens on a menu:
 
-- **Saving a project** stores everything: all 32 patterns, the chain, sound settings (including drum voicing), GEN settings and mutes. Slots saved by ETCH 1.0 still load.
-- **Slot actions:** LEFT/RIGHT chooses LOAD, SAVE or ERAS(e); press **A** to arm and **A** again to confirm. Saving to an empty slot happens immediately.
-- Every save is checked: ETCH writes, then re-reads and checksums the data before reporting `SAVED + VERIFIED`.
-- The `*` marks the slot you saved last.
+| Item | |
+|---|---|
+| **NEW** | Press A, then A again: an empty project called UNTITLED, ready to program or GENERATE |
+| **LOAD** | The eight **demo songs** (D1–D8) and your eight **saves** (S1–S8). Press A, then A again to load; ETCH jumps to LIVE and starts playing. |
+| **SAVE** | Your eight save slots. A saves to an empty slot; on a used slot, A then A replaces it. **B+A**, then A, erases a slot. |
+| **ABOUT** | What ETCH is, what generative music is, and who Synth Centric is. LEFT/RIGHT turns the page. |
+
+Tap **B** to go back to the menu from any list.
+
+- **A save** stores everything: all 32 patterns, the chain, sound settings (including drum voicing), GEN settings and mutes. Slots saved by ETCH 1.0 still load.
+- Every save is checked: ETCH writes, then re-reads and checksums the data before reporting `SAVED + VERIFIED`. The `*` marks the slot you saved last.
 - A damaged slot shows `!CORRUPT!` and cannot be loaded, so your current work stays safe. Empty or never-used memory shows `--empty--`.
-- **A, A on a track** reloads that ROM track. This replaces the working project, so save first.
+- Loading a demo song replaces the working project, so save first if you want to keep your changes.
+
+![LOAD](images/screen_file_load.png) ![ABOUT](images/screen_about3.png)
 
 > **Workflow: save a project for later**
-> From LIVE, SELECT+RIGHT three times reaches SAVE. Choose a slot, set SAVE, press A (and A again to overwrite). Wait for `SAVED + VERIFIED`. On a flash cart, make sure the cart writes its save file. See `HARDWARE_COMPATIBILITY.md`.
+> SELECT+RIGHT three times from LIVE reaches FILE. Choose SAVE, pick a slot, press A (A again to replace). Wait for `SAVED + VERIFIED`. On a flash cart, make sure the cart writes its save file. See `HARDWARE_COMPATIBILITY.md`.
 
 ---
 
@@ -390,12 +408,12 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 - **Ride the decay.** Short DEC with high ENV gives tight, plucky acid. Opening DEC while the resonance is high makes the classic long squelch.
 - **Accents plus slides** carry most of the character in acid. Put them on off-beats.
 - **Let DRIFT play for minutes.** It keeps the groove recognisable while it breathes.
-- **Use CORRODE as a build.** Run it for 16 bars, then switch to STABLE when you find a line you like, and SAVE it.
+- **Use CORRODE as a build.** Run it for 16 bars, then switch to STABLE when you find a line you like, and save it (FILE > SAVE).
 - **Mute the bass for breakdowns** (A on the BS name on LIVE), then bring it back on a fill.
 - **Probability on hats and ghost notes** (P 5–6) makes even a STABLE pattern feel alive.
 
 > **Workflow: a four-minute evolving acid piece**
-> 1. Load T1 *FIRST CONTACT* (or press START at power-on). It runs in song mode with DRIFT.
+> 1. Load D1 *FIRST CONTACT* (FILE > LOAD, or press START at power-on). It runs in song mode with DRIFT.
 > 2. 0:00–1:00: let the chain play. Slowly raise CUT from 7 to about 14.
 > 3. 1:00: set EVO to CORRODE, MUT 8. Add RES up to 7. Fill (A) every 8 bars.
 > 4. 2:00: mute KK and SN on LIVE (A on the lane names) for 8 bars, then sweep DEC up. Unmute on a fill.
@@ -434,8 +452,8 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 | Patterns / chain | 32 patterns, 16-slot chain (1–8 bars each), song and loop modes |
 | Tempo | 60–220 BPM, swing 0–8; 256 Hz engine clock; long-term tempo error < 0.01 % |
 | Generation | 6 styles, 6 scales, seeded and reproducible (12-digit codes) |
-| Evolution | STABLE / DRIFT / CORRODE, 11 mutation operators, one-level undo |
-| Storage | 8 project slots in 32 KB battery SRAM, versioned and checksummed |
+| Evolution | STABLE / DRIFT / CORRODE, 11 mutation operators, one-level undo. DRIFT changes every channel every 4 bars, bounded per channel and per pattern, random per listen. |
+| Storage | 8 project slots in 32 KB battery SRAM, versioned and checksummed; 8 demo songs in ROM |
 | ROM | 128 KB MBC5 (+RAM+BATTERY) |
 
 ---
@@ -445,7 +463,7 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
-- Concept, music and release: **Synth Centric**.
+- Concept, music and release: **Synth Centric** (Dan Schwebel), an Australian beat maker, music producer, writer and educator.
 - Instrument design and software: developed for Synth Centric.
 - Built with **GBDK-2020** and **SDCC** (see `THIRD_PARTY_NOTICES.md`).
 - Tested with **SameBoy** by Lior Halphon, and **PyBoy**.

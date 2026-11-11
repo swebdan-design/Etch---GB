@@ -10,7 +10,7 @@ ETCH uses only the Game Boy's D-pad, A, B, START and SELECT.
 The screens sit side by side in one row, with **LIVE** as home:
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  SAVE
+ SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE
 ```
 
 - **SELECT + LEFT / RIGHT** moves along the row. It stops at the ends; it does not wrap.
@@ -68,6 +68,7 @@ CUT ███████      7     macros ...
 | macro row | LEFT / RIGHT | Adjust; hold to sweep |
 | macro row | A + UP / DOWN | Adjust coarse (BPM ±10) |
 | macro row | A (tap) | **FILL**: a drum fill until the bar line, or through the next bar if late in the bar |
+| EVO row | LEFT / RIGHT | **STABLE** (no change) / **DRIFT** (a living song: every 4 bars every channel changes a little) / **CORRODE** (bigger changes every 2 bars) |
 
 Macros: CUT, RES, ENV, DEC, ACC, DRV, BPM, EVO (mode), MUT (mutation intensity). The bottom line always says what A does where the cursor is.
 
@@ -144,11 +145,19 @@ The top row holds the channel tabs: **BAS** (acid bass) · **KCK** · **SNR** ·
 | COPY | A+D-pad chooses the destination; A copies the current pattern |
 | CLEAR | A, A clears the current pattern (undoable) |
 
-## SAVE — slots and the album
+## FILE — projects, demo songs, saving, about
+
+FILE opens on a small menu:
+
+| Item | What it does |
+|---|---|
+| **NEW** | A, A: start an empty project (UNTITLED) and go to LIVE |
+| **LOAD** | The 8 **demo songs** (D1–D8) and your 8 **saves** (S1–S8). A arms, A again loads; ETCH goes to LIVE and plays. |
+| **SAVE** | The 8 save slots. A saves (A, A to replace a used slot). B+A then A erases a slot. |
+| **ABOUT** | Four pages: what ETCH is, what generative music is, who Synth Centric is, version and credits. LEFT/RIGHT (or A) turns the page. |
 
 | Buttons | Action |
 |---|---|
-| UP / DOWN | Slot S1–S8 or track T1–T8 |
-| LEFT / RIGHT | Slot action: LOAD / SAVE / ERAS |
-| A | Arm. Press A again to confirm. Saving to an empty slot is immediate. |
-| A, A on a track | Load that ROM track |
+| UP / DOWN | Choose |
+| A | Open / arm / confirm |
+| **B** (tap) | Back to the FILE menu |

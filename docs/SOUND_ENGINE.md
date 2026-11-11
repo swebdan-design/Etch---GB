@@ -92,7 +92,7 @@ Pitch changes (slides, LFO vibrato) write only the period registers and never re
 - Measured in SameBoy, using a cycle profiler built into the test harness:
   - About 23 % average CPU.
   - Typical tick about 900–2 000 cycles.
-  - Worst-case tick (a step with note-on, wave reload and drums) **≤ 57 DIV units ≈ 14.6 k cycles** (largest value seen in any test run). That is less than one tick period of 16.4 k cycles. A pending timer interrupt is latched by the hardware, so even a long tick delays the next one rather than dropping it.
+  - Worst-case tick (a step with note-on, wave reload and drums) **≤ 59 DIV units ≈ 15.1 k cycles** (largest value seen in any test run). That is less than one tick period of 16.4 k cycles. A pending timer interrupt is latched by the hardware, so even a long tick delays the next one rather than dropping it.
   - Over 5-minute runs: zero late or lost ticks, and step count matches theory within one step.
 - Main-loop and ISR multiplications were replaced by generated lookup tables (`tools/gen_engine_tables.py`), shift sums and an 8×8 assembly multiply, because SDCC's 16-bit multiply and divide helpers are too slow for interrupt time.
 
@@ -143,6 +143,15 @@ Each lane has **TUNE**, **DECAY** and **LEVEL** (project-wide; save format v2):
 | LEVEL (0–15) | Initial envelope volume × (level+1)/16 | same |
 
 The voiced register values for all 16 sounds are recomputed in the main loop whenever a voicing value changes (`drums_revoice`). Triggering a drum therefore costs the timer interrupt nothing extra.
+
+### Living-song sound drift
+
+In DRIFT and CORRODE, each committed evolution also nudges the sound:
+
+- `evo_cut_ofs` is added to the bass cutoff inside the ISR. It moves ±1 per phrase, bounded to ±2 (DRIFT) or ±5 (CORRODE).
+- `evo_tune_ofs[lane]` is added to each lane's TUNE in `drums_revoice`, bounded to ±1 / ±2.
+
+They are offsets, never stored in the project, and they reset in STABLE.
 
 ## 10. Differences from GB-303
 

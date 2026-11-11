@@ -246,30 +246,56 @@ int main(void)
         CHECK(a.drum[LANE_SNARE] == 0x0F0F, "generate overwrote locked lane");
     }
 
-    /* 8. DRIFT vs CORRODE are meaningfully different */
+    /* 8. DRIFT: every channel moves every phrase, bounded around the anchor;
+     *    CORRODE travels much further */
     {
-        double dd = 0, dc = 0, rd = 0, rc = 0;
-        int ch_d = 0, ch_c = 0;
+        double dd = 0, dc = 0, rd = 0, rc = 0, bd = 0, bc = 0;
+        int every = 0, total = 0, maxdiv = 0, l, s2;
         for (seed = 1; seed <= 30; seed++) {
             g = mkgen((uint16_t)seed * 17, STYLE_ACID, SCALE_MINOR, 0);
             pattern_clear(&a); corr_generate(&a, &g, GEN_ALL);
             memcpy(&c, &a, sizeof a);
-            for (i = 0; i < 16; i++) { ch_d += corr_mutate(&b, &a, &c, &g, EVO_DRIFT, 8, (uint16_t)i); memcpy(&a, &b, sizeof a); }
+            for (i = 0; i < 16; i++) {
+                int bass_changed = 0, lanes_changed = 0;
+                corr_mutate(&b, &a, &c, &g, EVO_DRIFT, 8, (uint16_t)i);
+                for (s2 = 0; s2 < 16; s2++)
+                    if (a.note[s2] != b.note[s2] || a.flags[s2] != b.flags[s2] || a.prob[s2] != b.prob[s2]) bass_changed = 1;
+                for (l = 0; l < 4; l++) if (a.drum[l] != b.drum[l]) lanes_changed++;
+                if (bass_changed && lanes_changed == 4) every++;
+                total++;
+                memcpy(&a, &b, sizeof a);
+                if (diff_count(&a, &c) > maxdiv) maxdiv = diff_count(&a, &c);
+            }
             dd += diff_count(&a, &c); rd += repetition(&a);
+            for (s2 = 0; s2 < 16; s2++) if (a.note[s2] != c.note[s2] || a.flags[s2] != c.flags[s2]) bd++;
             memcpy(&a, &c, sizeof a);
-            for (i = 0; i < 16; i++) { ch_c += corr_mutate(&b, &a, NULL, &g, EVO_CORRODE, 8, (uint16_t)i); memcpy(&a, &b, sizeof a); }
+            for (i = 0; i < 16; i++) { corr_mutate(&b, &a, NULL, &g, EVO_CORRODE, 8, (uint16_t)i); memcpy(&a, &b, sizeof a); }
             dc += diff_count(&a, &c); rc += repetition(&a);
+            for (s2 = 0; s2 < 16; s2++) if (a.note[s2] != c.note[s2] || a.flags[s2] != c.flags[s2]) bc++;
         }
-        dd /= 30; dc /= 30; rd /= 30; rc /= 30;
-        printf("  evolution (16 generations, intensity 8): DRIFT changes/gen %.2f, divergence %.1f, repetition %.2f\n",
-               ch_d / 480.0, dd, rd);
-        printf("                                         CORRODE changes/gen %.2f, divergence %.1f, repetition %.2f\n",
-               ch_c / 480.0, dc, rc);
-        CHECK(ch_c > ch_d * 3 / 2, "CORRODE not more active than DRIFT");
-        CHECK(dc > dd, "CORRODE does not diverge further than DRIFT");
-        CHECK(dd > 0.5, "DRIFT does nothing");
+        dd /= 30; dc /= 30; rd /= 30; rc /= 30; bd /= 30; bc /= 30;
+        printf("  DRIFT  (16 phrases, intensity 8): every channel changed in %d/%d phrases, divergence %.1f (max %d), bass steps changed %.1f, repetition %.2f\n",
+               every, total, dd, maxdiv, bd, rd);
+        printf("  CORRODE(16 phrases, intensity 8): divergence %.1f, bass steps changed %.1f, repetition %.2f\n", dc, bc, rc);
+        CHECK(every * 100 >= total * 95, "DRIFT left a channel unchanged in %d/%d phrases", total - every, total);
+        /* bound: bass (2 + 8/6) + 1 for an accent move, each lane 1 + 8/8 */
+        CHECK(maxdiv <= 4 + 4 * 2, "DRIFT exceeded its bound (max divergence %d)", maxdiv);
+        CHECK(bd <= 4.5, "DRIFT bass wandered too far (%.1f steps)", bd);
+        CHECK(dc > dd * 1.5, "CORRODE does not diverge further than DRIFT");
+        CHECK(bc > bd * 2, "CORRODE bass does not travel further than DRIFT");
         CHECK(rc > 0.35, "CORRODE lost all repetition (incoherent)");
-        CHECK(rd > 0.5, "DRIFT lost the groove's repetition");
+        CHECK(rd > 0.4, "DRIFT lost the groove's repetition");
+    }
+
+    /* 8b. DRIFT leaves locked lanes alone and still moves the others */
+    {
+        g = mkgen(91, STYLE_ACID, SCALE_MINOR, 0);
+        pattern_clear(&a); corr_generate(&a, &g, GEN_ALL);
+        a.lock = PLOCK_LANE0 << LANE_KICK;
+        memcpy(&c, &a, sizeof a);
+        corr_mutate(&b, &a, &c, &g, EVO_DRIFT, 8, 7);
+        CHECK(b.drum[LANE_KICK] == a.drum[LANE_KICK], "DRIFT touched a locked lane");
+        CHECK(b.drum[LANE_CH] != a.drum[LANE_CH], "DRIFT did not move the hats");
     }
 
     /* 9. mutation determinism */

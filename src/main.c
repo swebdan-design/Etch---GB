@@ -17,9 +17,13 @@ uint8_t app_screen;
 uint8_t app_last_note = 21;         /* A2: what A writes on an empty step */
 static uint8_t need_redraw;
 static uint8_t audition_timer;
-static pattern_t anchor;            /* DRIFT's musical memory */
-static uint8_t anchor_pat = 0xFF;
-static uint8_t anchor_dirty;
+/* DRIFT's musical memory: one anchor per recently evolved pattern, so every
+ * pattern of a song keeps breathing around its own original. */
+#define N_ANCHORS 8
+static pattern_t anchors[N_ANCHORS];
+static uint8_t anchor_id[N_ANCHORS] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+static uint8_t anchor_next;
+static uint16_t evo_rng;
 static pattern_t evo_tmp;
 static uint16_t evo_ctr;
 static uint8_t last_commits;
@@ -29,10 +33,75 @@ volatile uint8_t main_worst;   /* longest main-loop iteration, frames */
 
 void app_redraw(void) { need_redraw = 1; }
 
+static void anchors_forget(uint8_t pat)
+{
+    uint8_t i;
+    for (i = 0; i < N_ANCHORS; i++)
+        if (pat == 0xFF || anchor_id[i] == pat) anchor_id[i] = 0xFF;
+}
+
+static pattern_t *anchor_for(uint8_t pat)
+{
+    uint8_t i;
+    for (i = 0; i < N_ANCHORS; i++)
+        if (anchor_id[i] == pat) return &anchors[i];
+    i = anchor_next;
+    anchor_next = (uint8_t)((anchor_next + 1) & (N_ANCHORS - 1));
+    anchor_id[i] = pat;
+    memcpy(&anchors[i], &proj.pat[pat], sizeof(pattern_t));
+    return &anchors[i];
+}
+
+/* fresh randomness for every evolution: the entropy pool (button timing,
+ * the moment START was pressed) stirred with a xorshift */
+static uint16_t evo_random(void)
+{
+    evo_rng ^= ui_entropy ^ DIV_REG;
+    evo_rng ^= evo_rng << 7;
+    evo_rng ^= evo_rng >> 9;
+    evo_rng ^= evo_rng << 8;
+    if (!evo_rng) evo_rng = 0x2601;
+    return evo_rng;
+}
+
+/* After each committed evolution the SOUND drifts too: the bass cutoff and
+ * every drum lane's tuning take a small random step, bounded around the
+ * settings you chose (they are live offsets and are never saved). */
+static void sound_drift(void)
+{
+    uint8_t l, r;
+    int8_t lim = proj.gen.mode == EVO_CORRODE ? 5 : 2;
+    int8_t dlim = proj.gen.mode == EVO_CORRODE ? 2 : 1;
+    int8_t v;
+    if (proj.gen.mode == EVO_STABLE) return;
+    r = (uint8_t)evo_random();
+    v = (int8_t)(evo_cut_ofs + (int8_t)((r & 3) == 0 ? -1 : (r & 3) == 1 ? 1 : 0));
+    if (v > lim) v = lim;
+    if (v < -lim) v = -lim;
+    evo_cut_ofs = v;
+    for (l = 0; l < NUM_LANES; l++) {
+        r >>= 2;
+        if (l == 2) r = (uint8_t)(evo_random() >> 3);
+        v = (int8_t)(evo_tune_ofs[l] + (int8_t)((r & 3) == 0 ? -1 : (r & 3) == 1 ? 1 : 0));
+        if (v > dlim) v = dlim;
+        if (v < -dlim) v = -dlim;
+        evo_tune_ofs[l] = v;
+    }
+    drums_revoice();
+}
+
+static void sound_drift_reset(void)
+{
+    uint8_t l;
+    evo_cut_ofs = 0;
+    for (l = 0; l < NUM_LANES; l++) evo_tune_ofs[l] = 0;
+    drums_revoice();
+}
+
 void app_pattern_edited(void)
 {
     seq_pattern_edited();
-    anchor_dirty = 1;
+    anchors_forget(seq_cur);           /* your edit becomes the new memory */
 }
 
 void app_audition(uint8_t note, uint8_t accent)
@@ -52,25 +121,23 @@ void app_fill(void)
 }
 
 /* Prepare the next mutation of the playing pattern (main-loop context). */
+/* Prepare the next mutation (main-loop context).  It is prepared for the
+ * pattern that will play after the next bar line, because that is where the
+ * ISR commits it -- in song mode the chain usually changes pattern exactly
+ * on a phrase boundary. */
 static void evo_service(void)
 {
-    uint8_t mode = proj.gen.mode, target;
-    if (evo_state == EVO_READY && evo_target != seq_cur) {
+    uint8_t mode = proj.gen.mode, target = seq_playing ? seq_next_bar_pattern() : seq_cur;
+    if (evo_state == EVO_READY && evo_target != target) {
         CRITICAL { if (evo_state == EVO_READY) evo_state = EVO_IDLE; }   /* playback moved on */
     }
     if (evo_state != EVO_IDLE) return;
     if (mode == EVO_STABLE && !evo_request) return;
-    target = seq_cur;
-    if (anchor_pat != target || anchor_dirty) {
-        memcpy(&anchor, &proj.pat[target], sizeof(pattern_t));
-        anchor_pat = target;
-        anchor_dirty = 0;
-    }
-    corr_mutate(&evo_tmp, &proj.pat[target], &anchor, &proj.gen,
+    corr_mutate(&evo_tmp, &proj.pat[target], anchor_for(target), &proj.gen,
                 mode == EVO_STABLE ? EVO_DRIFT : mode, proj.gen.mutation,
-                (uint16_t)(proj.gen.seed + (++evo_ctr)));
+                (uint16_t)(evo_random() + (++evo_ctr)));
     CRITICAL {
-        if (evo_state == EVO_IDLE && seq_cur == target) {
+        if (evo_state == EVO_IDLE) {
             memcpy(&evo_cand, &evo_tmp, sizeof(pattern_t));
             evo_target = target;
             evo_state = EVO_READY;
@@ -123,10 +190,46 @@ void app_project_loaded(void)
         evo_request = 0;
         evo_undo_pat = 0xFF;
     }
-    anchor_pat = 0xFF;
+    anchors_forget(0xFF);
+    evo_cut_ofs = 0;
+    { uint8_t l; for (l = 0; l < NUM_LANES; l++) evo_tune_ofs[l] = 0; }
     seq_set_tempo();
     drums_revoice();
     app_redraw();
+}
+
+/* FILE > NEW: an empty project with a sensible starting sound */
+void app_new_project(void)
+{
+    static const uint8_t synth_def[16] = { 0, 8, 4, 8, 7, 8, 0, 6, 4, 0, 0, 0, 124, 0, 12, 1 };
+    static const char nm[PROJECT_NAME_LEN] = { 'U','N','T','I','T','L','E','D',' ',' ' };
+    uint8_t i;
+    seq_stop();
+    memcpy(proj.name, nm, PROJECT_NAME_LEN);
+    memcpy(&proj.synth, synth_def, sizeof(synth_t));
+    proj.gen.key = 9; proj.gen.scale = SCALE_MINOR; proj.gen.style = STYLE_ACID;
+    proj.gen.density = 9; proj.gen.sync = 5; proj.gen.accent = 8; proj.gen.slide = 7;
+    proj.gen.octave = 0; proj.gen.mutation = 5; proj.gen.mode = EVO_STABLE;
+    proj.gen.seed = ui_entropy;
+    for (i = 0; i < CHAIN_LEN; i++) { proj.chain.pat[i] = 0xFF; proj.chain.rep[i] = 1; }
+    proj.chain.pat[0] = 0;
+    proj.chain.rep[0] = 4;
+    proj.chain.song = 0;
+    proj.mutes = 0;
+    proj.start_pattern = 0;
+    for (i = 0; i < NUM_PATTERNS; i++) {
+        pattern_clear(&proj.pat[i]);
+        proj.pat[i].kit[1] = 2;                /* clap */
+    }
+    project_drum_defaults(&proj);
+    app_project_loaded();
+}
+
+void app_go_live(uint8_t play)
+{
+    app_screen = SCR_LIVE;
+    need_redraw = 1;
+    if (play && !seq_playing) { seq_seed_live(ui_entropy); seq_start(); }
 }
 
 void app_load_track(uint8_t t)
@@ -146,7 +249,7 @@ static void enter_screen(void)
     case SCR_LIVE:  scr_live_enter(); break;
     case SCR_GEN:   scr_gen_enter(); break;
     case SCR_SONG:  scr_song_enter(); break;
-    default:        scr_save_enter(); break;
+    default:        scr_file_enter(); break;
     }
 }
 
@@ -158,7 +261,7 @@ static void frame_screen(void)
     case SCR_LIVE:  scr_live_frame(); break;
     case SCR_GEN:   scr_gen_frame(); break;
     case SCR_SONG:  scr_song_frame(); break;
-    default:        scr_save_frame(); break;
+    default:        scr_file_frame(); break;
     }
 }
 
@@ -186,7 +289,7 @@ static void global_keys(void)
         if (key_pressed & J_B) app_undo();
     } else if (key_pressed & J_START) {
         if (seq_playing) seq_stop();
-        else seq_start();
+        else { seq_seed_live(ui_entropy); seq_start(); }
     }
 }
 
@@ -215,6 +318,8 @@ void main(void)
     ui_flush_all();
     need_redraw = 0;
     DISPLAY_ON;
+    evo_rng = ui_entropy;            /* the moment START was pressed */
+    seq_seed_live(ui_entropy);
     seq_start();                     /* press START, hear acid */
     last_commits = evo_commits;
 
@@ -239,6 +344,7 @@ void main(void)
         if (evo_commits != last_commits) {
             uint8_t g = proj.pat[seq_cur].gen;
             last_commits = evo_commits;
+            sound_drift();
             strcpy(msgbuf, "EVOLVED  GEN ");
             msgbuf[13] = (char)('0' + (g / 100) % 10);
             msgbuf[14] = (char)('0' + (g / 10) % 10);
@@ -246,6 +352,9 @@ void main(void)
             msgbuf[16] = 0;
             ui_msg(msgbuf);
         }
+        if (proj.gen.mode == EVO_STABLE && (evo_cut_ofs || evo_tune_ofs[0] || evo_tune_ofs[1] ||
+                                            evo_tune_ofs[2] || evo_tune_ofs[3]))
+            sound_drift_reset();
         evo_service();
         t0 = (uint8_t)((uint8_t)sys_time - t0);
         if (t0 > main_worst) main_worst = t0;

@@ -33,7 +33,7 @@ This report gives the result of every check that was actually run, and states cl
 
 ## 2. Host unit tests — CORROSION (`make hosttest`)
 
-**32 checks, 0 failures.**
+**36 checks, 0 failures.**
 
 | Area | What was checked | Result |
 |---|---|---|
@@ -44,14 +44,14 @@ This report gives the result of every check that was actually run, and states cl
 | Structure | Average best-period repetition of generated lines = 0.88 (random lines score far lower) | PASS |
 | STABLE | Zero changes, pattern bit-identical | PASS |
 | Locks | 8 000 mutations (DRIFT and CORRODE, intensity 15) with 3 locked steps and 2 locked lanes: **0 violations, 0 invalid patterns**. Bass lock over 100 CORRODE generations; pattern lock; GENERATE preserves locked steps and lanes. | PASS |
-| DRIFT vs CORRODE | Over 16 generations: DRIFT changes 2.2 events per generation, bounded divergence 4.3, repetition 0.54. CORRODE changes 5.2 per generation, divergence 22.1, repetition 0.85. | PASS |
+| DRIFT (living song) vs CORRODE | Over 30 grooves × 16 phrases at intensity 8: DRIFT changed **every channel** (bass + 4 drum lanes) in **480 / 480** phrases. Divergence stays bounded: mean 7.4, maximum 12 (the bound). Bass steps changed 2.4, repetition 0.46. CORRODE: divergence 24.9, bass steps changed 14.0, repetition 0.60. A locked lane is left alone while the others move. | PASS |
 | Mutation determinism and generation counter | | PASS |
 | Seed code | Encode/decode round trip; a code reproduces the groove exactly; garbage rejected | PASS |
 | Fill | ACID fill has a snare roll and keeps the downbeat kicks | PASS |
 
 ## 3. Emulator integration tests (`make emutest`, SameBoy DMG)
 
-**77 / 77 checks passed** on the release ROM, version 1.1 (SHA-256 `5f54596038f2dc81caf5dad5545cb2b13bc4e184583b1f092e2e5aebfc147c59`). The raw results are in [`emu_results.txt`](emu_results.txt).
+**89 / 89 checks passed** on the release ROM, version 2.3 (SHA-256 `0508ca2f30a95b69bb539b37b56491891b6d130e54f541abba8d426addd4df29`). The raw results are in [`emu_results.txt`](emu_results.txt).
 
 ### Boot and branding
 
@@ -65,7 +65,7 @@ This report gives the result of every check that was actually run, and states cl
 - 124 BPM: 83 steps in 10.046 s; theory gives 83.0.
 - 5-minute CORRODE run in song mode: 2 492 steps in 301.4 s against 2 491.3 expected. This is within one step's quantisation, so there is no cumulative drift.
 - A separate gap detector in the ISR recorded **zero late or missed timer ticks** over 3 × 30 s on different screens: 7 715 ticks counted against 7 715.0 expected each time.
-- Worst-case ISR: 54–57 DIV units (13.8k–14.6k cycles), below the 16.4k-cycle tick period. In 1.1, drum voicing is precomputed in the main loop. A first version computed it at trigger time and pushed the worst case to about 17.9k cycles; the test caught this and it was fixed.
+- Worst-case ISR: 54–59 DIV units (13.8k–15.1k cycles), below the 16.4k-cycle tick period. In 1.1, drum voicing is precomputed in the main loop. A first version computed it at trigger time and pushed the worst case to about 17.9k cycles; the test caught this and it was fixed.
 
 ### Audio (captured from the emulated APU)
 
@@ -121,6 +121,24 @@ This report gives the result of every check that was actually run, and states cl
 - STABLE left the pattern untouched for 15 s.
 - SELECT+A in STABLE commits an evolution at the bar line.
 
+### FILE screen (2.3)
+
+- The FILE menu shows NEW / LOAD / SAVE / ABOUT, with "ETCH v2.3" and "by Synth Centric".
+- ABOUT page 1 explains the product and page 2 explains generative music.
+- **ABOUT page 3 contains the bio verbatim:** "Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator."
+- B returns from ABOUT to the menu.
+- NEW (A, A) creates an empty UNTITLED project and returns to LIVE.
+- FILE > SAVE opens the slot list with its title.
+- FILE > LOAD lists D1–D8 and S1–S8.
+- Loading goes to LIVE and starts playback.
+- B+A, A in SAVE erases a slot and clears its "last saved" star.
+
+### Living songs (2.3)
+
+- **DRIFT on demo D1, in song mode:** 8 evolutions in 62 s (8.0 phrases). In 1.1, song mode skipped most phrases; this was fixed.
+- After one minute, the bass had changed in all 4 patterns of the song, and every one of the 4 drum lanes had changed.
+- **Two runs whose START press differed by 11 frames evolved differently.** The patterns differed, and so did the sound-drift offsets: cutoff +2 vs +1, drum tune offsets differ. This confirms per-listen randomness.
+
 ### Saving
 
 - Blank SRAM shows empty slots, not corrupt ones.
@@ -146,7 +164,7 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
 | PyBoy: boot, title (`by Synth Centric`), LIVE, playback, audio present | PASS (PyBoy's timer runs about 2 % slow; it is not used for timing) |
 | Main-loop responsiveness | About 47 iterations/s on LIVE in STABLE (worst 2 frames). In CORRODE, one iteration of up to 7 frames per phrase while a mutation is computed. Presses are latched in the VBlank ISR, so none are lost. |
 | CPU profile (`tests/profile.py`) | Audio ISR about 23 % of CPU on average |
-| Memory | ROM bank 0 85 %, banks 1–3 nearly full, bank 4 56 %, banks 5–7 free; WRAM0 84 % |
+| Memory | ROM bank 0 92 %, banks 1–3 nearly full, bank 4 69 %, banks 5–7 free; RAM data ends at 0xD017 (about 4 KB below the stack) |
 | Clean build | `make clean && make` succeeds (about 25 s) |
 | Source archive | `release/ETCH_Source.zip` extracted into an empty directory and built with GBDK-2020 4.3.0: **byte-identical ROM** (same SHA-256) |
 | Full regeneration | Deleting all generated data (wavetables, LUTs, engine tables, graphics, tracks) in the extracted copy and rebuilding regenerates identical files and an identical ROM |
@@ -154,13 +172,17 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
 
 ## 5. Screenshots (genuine SameBoy captures)
 
+| FILE | FILE > LOAD | ABOUT (Synth Centric) | |
+|---|---|---|---|
+| ![](images/screen_file.png) | ![](images/screen_file_load.png) | ![](images/screen_about3.png) | |
+
 | Title | SYNTH (BAS) | SYNTH (KCK) | TRACK |
 |---|---|---|---|
 | ![](images/screen_title.png) | ![](images/screen_synth.png) | ![](images/screen_synth_kick.png) | ![](images/screen_track.png) |
 
-| LIVE | GEN | SONG | SAVE |
+| LIVE | GEN | SONG | FILE > SAVE |
 |---|---|---|---|
-| ![](images/screen_live.png) | ![](images/screen_gen.png) | ![](images/screen_song.png) | ![](images/screen_save.png) |
+| ![](images/screen_live.png) | ![](images/screen_gen.png) | ![](images/screen_song.png) | ![](images/screen_file_save.png) |
 
 ## 6. Bugs found and fixed during testing
 
@@ -173,6 +195,10 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
   - CORRODE filled every step with accents; fixed with density and accent homeostasis.
 - **Evolution stalled after chain changes:** the candidate is now retargeted when playback moves to another pattern.
 - **Build reproducibility:** a generated source was not listed explicitly in the Makefile, so it would not regenerate after deletion. Fixed.
+- **2.3:** the DRIFT memory used a single anchor, so in song mode it reset on every pattern change and could wander. There are now per-pattern anchors.
+- **2.3:** song-mode evolutions were skipped at chain boundaries. Evolution now targets the next bar's pattern.
+- **2.3:** evolution randomness was derived from the project seed, so every listener heard the same evolution. It now uses an entropy pool from button timing.
+- **2.3 tests caught:** the FILE list title was hidden by the map flash, and an erased slot kept its star. Both fixed.
 - **1.1 drum voicing in the ISR** pushed the worst-case tick over the period; it is now precomputed in the main loop.
 - **Test-harness bugs:** `wav`/`wavstop` parsing, and NR33/34 being write-only, were fixed in the tests, not the ROM.
 

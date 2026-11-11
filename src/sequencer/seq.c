@@ -71,6 +71,15 @@ static uint8_t live_rand(void)
     return (uint8_t)live_rng;
 }
 
+/* the pattern that will play after the next bar line (chain / queue aware) */
+static uint8_t peek_next_pattern(uint8_t *loop_out);
+uint8_t seq_next_bar_pattern(void)
+{
+    uint8_t lp, p;
+    CRITICAL { p = peek_next_pattern(&lp); }
+    return p;
+}
+
 pattern_t *seq_pattern(void)
 {
     return &proj.pat[seq_cur];
@@ -359,6 +368,11 @@ void seq_init(void)
     TMA_REG = TIMER_TMA;
     TAC_REG = 0x04;                     /* timer on, 4096 Hz */
     set_interrupts(VBL_IFLAG | TIM_IFLAG);
+}
+
+void seq_seed_live(uint16_t s)
+{
+    live_rng = s ? s : 0x5EED;
 }
 
 void seq_start(void)

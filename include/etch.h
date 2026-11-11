@@ -19,7 +19,7 @@
 #define BANKREF_EXTERN(x)
 #endif
 
-#define ETCH_VERSION_STR "1.1"
+#define ETCH_VERSION_STR "2.3"
 
 /* ---- dimensions -------------------------------------------------------- */
 #define NUM_STEPS      16

@@ -62,6 +62,7 @@ static const uint8_t slide_b[16] = { 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 0
 volatile uint8_t synth_gate;
 volatile uint8_t synth_dbg_cut, synth_dbg_res, synth_dbg_amp;
 volatile uint8_t synth_reloads;
+volatile int8_t evo_cut_ofs;          /* living-song timbre drift, -5..+5 */
 volatile uint16_t synth_dbg_period;   /* last CH3 period written (tests) */
 
 static uint16_t pitch;          /* 8.8 semitone, includes tune offset   */
@@ -309,7 +310,7 @@ void synth_tick(void)
     c = (int8_t)(proj.synth.cutoff
         + envmod_tbl[((uint8_t)proj.synth.envmod << 5) | (e >> 3)]
         + acc_tbl[((uint8_t)proj.synth.accent << 4) | (aenv >> 4)]
-        + (acc_charge >> 4));
+        + (acc_charge >> 4) + evo_cut_ofs);
     r = (int8_t)proj.synth.res;
     if (proj.synth.lfo_depth && proj.synth.lfo_dest >= LFO_CUT) {
         int8_t amt = lfo_amt[((uint8_t)proj.synth.lfo_depth << 5) | ((uint8_t)(lfo_val + 128) >> 3)];

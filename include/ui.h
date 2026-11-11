@@ -13,8 +13,8 @@
 #define SCR_H 18
 
 /* screens, left to right; SELECT+LEFT/RIGHT walks the row (no wrap).
- *   SYNTH  <  TRACK  <  LIVE  >  GEN  >  SONG  >  SAVE                    */
-enum { SCR_SYNTH, SCR_TRACK, SCR_LIVE, SCR_GEN, SCR_SONG, SCR_SAVE, SCR_COUNT, SCR_TITLE = 0xFE };
+ *   SYNTH  <  TRACK  <  LIVE  >  GEN  >  SONG  >  FILE                    */
+enum { SCR_SYNTH, SCR_TRACK, SCR_LIVE, SCR_GEN, SCR_SONG, SCR_FILE, SCR_COUNT, SCR_TITLE = 0xFE };
 extern const char * const scr_names[SCR_COUNT];
 
 /* ---- shadow tile map --------------------------------------------------- */
@@ -44,6 +44,7 @@ void ui_msg_tick(void);
 
 /* ---- input ------------------------------------------------------------- */
 extern uint8_t key_held, key_pressed, key_repeat, key_released;
+extern uint16_t ui_entropy;              /* mixed from button-press timing */
 void ui_input(void);
 /* Editing grammar (all screens):
  *   D-pad            move the cursor            (ui_nav)
@@ -58,6 +59,7 @@ uint8_t ui_a_press(void);
 uint8_t ui_a_tap(void);
 uint8_t ui_clear(void);
 uint8_t ui_page(void);
+uint8_t ui_b_tap(void);                 /* B pressed and released on its own: back */
 void    ui_a_consume(void);
 void ui_input_init(void);
 #define K_DPAD (J_UP | J_DOWN | J_LEFT | J_RIGHT)
@@ -69,7 +71,7 @@ void scr_track_enter(void) BANKED; void scr_track_frame(void) BANKED;
 void scr_synth_enter(void) BANKED; void scr_synth_frame(void) BANKED;
 void scr_gen_enter(void) BANKED;   void scr_gen_frame(void) BANKED;
 void scr_song_enter(void) BANKED;  void scr_song_frame(void) BANKED;
-void scr_save_enter(void) BANKED;  void scr_save_frame(void) BANKED;
+void scr_file_enter(void) BANKED;  void scr_file_frame(void) BANKED;
 
 /* shared app services (src/main.c) */
 extern uint8_t app_screen;
@@ -82,6 +84,8 @@ void app_evolve_now(void);
 void app_undo(void);
 void app_load_track(uint8_t t);
 void app_project_loaded(void);
+void app_new_project(void);
+void app_go_live(uint8_t play);          /* switch to LIVE (and start playing) */
 uint8_t clampadd(uint8_t v, int8_t d, uint8_t lo, uint8_t hi);
 
 

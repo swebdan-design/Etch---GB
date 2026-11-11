@@ -9,10 +9,12 @@ Switch on, press START, and acid plays. From there you can perform it, reshape i
 ![SYNTH](docs/images/screen_synth.png) ![TRACK](docs/images/screen_track.png) ![LIVE](docs/images/screen_live.png)
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  SAVE      (SELECT + LEFT/RIGHT)
+ SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE      (SELECT + LEFT/RIGHT)
 ```
 
-LIVE is home: watch, play and program the pattern. SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG) and storage (SAVE).
+LIVE is home: watch, play and program the pattern. SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about).
+
+**Living songs:** with EVO on DRIFT (the demo songs start this way), every 4 bars every channel changes a little, using randomness from your button timing, so no two listens are the same.
 
 Editing works the same everywhere: **A** places or toggles, **A + D-pad** changes values, **B + A** deletes.
 
@@ -102,7 +104,7 @@ release/            ROM, source archive, demo
 
 ## Credits
 
-**ETCH — A Generative Acid Machine — by Synth Centric.** Built with GBDK-2020/SDCC. Tested with SameBoy and PyBoy.
+**ETCH — A Generative Acid Machine — by Synth Centric.** Synth Centric is Dan Schwebel, an Australian beat maker, music producer, writer and educator. Built with GBDK-2020/SDCC. Tested with SameBoy and PyBoy.
 
 Thanks to furrtek's GB-303 (CC BY 4.0), whose source was studied as a technical reference. No GB-303 code or data is included; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 

@@ -28,7 +28,7 @@ by Synth Centric
 
 - **Wave RAM (CH3).** On the DMG, writing wave RAM or re-triggering CH3 while it is reading can corrupt wave RAM. ETCH always switches the CH3 DAC off (`NR30 = 0`) before writing and re-enables it before triggering. This is the method documented as safe on all models.
 - **VRAM access.** Every tile-map and tile write goes through `vram_copy_asm`. It checks the PPU mode and writes each byte with interrupts disabled, so the audio interrupt can never fall between the "VRAM is accessible" check and the write. Interrupts are disabled for at most one mode-2/3 period (under 100 µs). This delays a tick slightly but never drops one.
-- **Timing.** All sound and sequencing run from the hardware timer at 256 Hz, never from frame counting. A timer interrupt that arrives during a long tick is latched by the hardware and serviced immediately afterwards. Measured worst-case tick: about 14.6 k of the 16.4 k cycles available.
+- **Timing.** All sound and sequencing run from the hardware timer at 256 Hz, never from frame counting. A timer interrupt that arrives during a long tick is latched by the hardware and serviced immediately afterwards. Measured worst-case tick: about 15.1 k of the 16.4 k cycles available.
 - **Bank switching in interrupts.** The audio interrupt maps the wavetable and LUT banks and restores GBDK's `_current_bank`. This keeps it safe while banked UI code is running.
 - **Input.** The joypad is sampled in the VBlank interrupt and new presses are latched, so short taps are not lost while the main loop is busy computing a mutation (up to about 7 frames, once per phrase).
 - **No CGB features.** There is no double speed, no extra WRAM banks, and no CGB palettes. The ROM's behaviour is the same on all models.
@@ -53,9 +53,9 @@ Never-written SRAM (random or `$FF`) is handled safely: slots show `--empty--`. 
 
 | Area | Use |
 |---|---|
-| ROM bank 0 | GBDK runtime, timer ISR, audio engine, drums, sequencer, UI core, name tables, engine lookup tables (13.9 KB used) |
+| ROM bank 0 | GBDK runtime, timer ISR, audio engine, drums, sequencer, UI core, name tables, engine lookup tables (15.1 KB used) |
 | ROM bank 1 | Wavetables `[osc 4][res 8][cut 32][16]`: exactly 16 384 bytes |
 | ROM banks 2–4 | Transfer LUTs (6 KB), CORROSION, UI screens, graphics, ROM tracks, storage (autobanked) |
 | ROM banks 5–7 | Free (about 49 KB) |
-| WRAM | Working project 2 133 bytes (73-byte header + 32 patterns × 64 bytes + 12 bytes of drum voicing), undo, candidate and anchor patterns, voiced drum table, 360-byte shadow tile map; 3.4 KB of 4 KB used in WRAM0 |
+| WRAM | Working project 2 133 bytes (73-byte header + 32 patterns × 64 bytes + 12 bytes of drum voicing), undo, candidate and anchor patterns, voiced drum table, 8 DRIFT anchors (512 bytes), 360-byte shadow tile map; data ends at 0xD017, about 4 KB below the stack |
 | SRAM | 8 slots × 4 KB (2 per bank) + a metadata block in bank 3 |

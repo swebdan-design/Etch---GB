@@ -36,7 +36,9 @@ void drums_init(void);
 void drums_play(uint8_t lanes, const uint8_t *kit);   /* lanes bitmask */
 void drums_tick(void);
 void drums_silence(void);
-void drums_revoice(void);                             /* after voicing changes (main loop) */
+void drums_revoice(void);
+extern int8_t evo_tune_ofs[NUM_LANES];               /* live drift, not saved */
+extern volatile int8_t evo_cut_ofs;                             /* after voicing changes (main loop) */
 extern const char * const drum_kit_names[NUM_LANES][KITS_PER_LANE];
 extern const uint8_t drum_kit_count[NUM_LANES];
 
@@ -68,6 +70,7 @@ extern pattern_t        evo_undo;
 
 void seq_init(void);
 void seq_start(void);
+void seq_seed_live(uint16_t s);            /* probability dice */
 void seq_stop(void);
 void seq_set_tempo(void);                  /* after bpm/swing change       */
 void seq_queue_pattern(uint8_t p);
@@ -77,5 +80,6 @@ void seq_pattern_edited(void);             /* invalidates evo candidate    */
 uint8_t seq_undo(void);
 void seq_backup_for_undo(uint8_t pat);
 pattern_t *seq_pattern(void);
+uint8_t seq_next_bar_pattern(void);
 
 #endif

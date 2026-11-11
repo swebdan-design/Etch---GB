@@ -8,17 +8,17 @@ PASS  START on title -> LIVE screen  #LIVE #P01S01 124# #
 PASS  START on title starts playback immediately  
 PASS  tempo accuracy (124 BPM)  83 steps in 10.046s, expected 83.0
 PASS  worst-case timer ISR shorter than one tick (64 DIV)  54 DIV ticks = 13824 cycles
-PASS  audio output present during playback  rms=2875
-PASS  SELECT+LEFT from LIVE -> TRACK  #TRACK#P01S03 124# #
+PASS  audio output present during playback  rms=3101
+PASS  SELECT+LEFT from LIVE -> TRACK  #TRACK#P01S03 124#U#
 PASS  TRACK shows column titles   # NOT ASL KSHO P CD
 PASS  SELECT+LEFT from TRACK -> SYNTH  
 PASS  SYNTH is the left end (no wrap)  
 PASS  SELECT+RIGHT from SYNTH -> TRACK  
 PASS  SELECT+RIGHT from TRACK -> LIVE  
-PASS  SELECT+RIGHT reaches GEN  #GEN  #P03S04 124# #
-PASS  SELECT+RIGHT reaches SONG  #SONG #P03S04 124# #
-PASS  SELECT+RIGHT reaches SAVE  #SAVE  P03S04 124# #
-PASS  SAVE is the right end (no wrap)  
+PASS  SELECT+RIGHT reaches GEN  #GEN  #P03S04 124#U#
+PASS  SELECT+RIGHT reaches SONG  #SONG #P03S04 124#U#
+PASS  SELECT+RIGHT reaches FILE  #FILE  P03S04 124#U#
+PASS  FILE is the right end (no wrap)  
 PASS  back to LIVE  
 PASS  playback continued through all screen changes  
 PASS  LIVE: A toggles a bass step  type 1 -> 0
@@ -40,14 +40,14 @@ PASS  SYNTH: A+RIGHT raises kick TUNE  tune=10
 PASS  SYNTH: drum LEVEL default full  
 PASS  SYNTH: B+A restores the default  
 PASS  back to LIVE after editing  
-PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=3245Hz cut16=3336Hz cut31=3755Hz
-PASS  RESONANCE changes timbre  res0=3261Hz res7=3589Hz
+PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=3273Hz cut16=3413Hz cut31=3741Hz
+PASS  RESONANCE changes timbre  res0=3240Hz res7=3568Hz
 PASS  bass pitch correct (C2 = 65.4 Hz)  measured 65.4 Hz
-PASS  SLIDE glides through intermediate pitches  19 distinct periods between C2 (1046) and C3 (1547)
-PASS  ACCENT audibly louder/brighter  step rms 1416 vs 969
-PASS  kick/snare/hat lanes produce sound  rms=2609
+PASS  SLIDE glides through intermediate pitches  20 distinct periods between C2 (1046) and C3 (1547)
+PASS  ACCENT audibly louder/brighter  step rms 1417 vs 969
+PASS  kick/snare/hat lanes produce sound  rms=2610
 PASS  bass + kick + snare + hat play simultaneously (CH1-4 active)  NR52 channel bits=F
-PASS  CORRODE commits mutations at phrase boundaries  3 commits in 30 s
+PASS  CORRODE commits mutations at phrase boundaries  7 commits in 30 s
 PASS  CORRODE changed the pattern  
 PASS  LOCKED step unchanged after mutations  
 PASS  LOCKED kick lane unchanged  
@@ -55,25 +55,37 @@ PASS  pattern memory valid after mutation
 PASS  SELECT+B undo restores the previous generation  
 PASS  STABLE leaves the programmed pattern untouched  
 PASS  SELECT+A requests an evolution (commits at bar line)  
-PASS  SAVE screen reached  
+PASS  FILE menu offers NEW / LOAD / SAVE / ABOUT  
+PASS  ABOUT page 1 explains the product  
+PASS  ABOUT page 2 explains generative music  
+PASS  ABOUT page 3: the Synth Centric bio, verbatim  Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator.
+PASS  B returns from ABOUT to the FILE menu  
+PASS  NEW (A, A) makes an empty project and returns to LIVE  UNTITLED
+PASS  FILE > SAVE opens the slot list  SAVE  B+A:ERASE     
 PASS  blank SRAM shows empty slots (not corrupt)  
-PASS  save to empty slot reports verified  
+PASS  save to empty slot S3 reports verified  
+PASS  FILE > LOAD lists demos and saves  
 PASS  slot persists across power cycle  ['S3*CONTACT          ']
 PASS  loaded project identical to saved project  cut=23 bpm=141
+PASS  loading goes to LIVE and plays  
+PASS  SAVE: B+A, A erases a slot  ['S3 --empty--        ']
 PASS  corrupted slot detected (checksum)  
 PASS  corrupted slot refused, project untouched  
 PASS  v1 (ETCH 1.0) slot is recognised  
 PASS  v1 slot loads with default drum voicing  bpm=141 voicing=[8, 8, 8, 8, 8, 8, 8, 8, 15, 15, 15, 15]
-PASS  track T1 CONTACT    loads and plays  name=CONTACT bpm=124 rms=2866
-PASS  track T2 CONCRETE   loads and plays  name=CONCRETE bpm=130 rms=2410
-PASS  track T3 STATIC     loads and plays  name=STATIC bpm=112 rms=1964
-PASS  track T4 CORROSION  loads and plays  name=CORROSION bpm=135 rms=3076
-PASS  track T5 NIGHTSHIFT loads and plays  name=NIGHTSHIFT bpm=104 rms=2727
-PASS  track T6 WAREHOUSE  loads and plays  name=WAREHOUSE bpm=128 rms=3015
-PASS  track T7 SIGNALLOSS loads and plays  name=SIGNALLOSS bpm=118 rms=2764
-PASS  track T8 AFTERIMAGE loads and plays  name=AFTERIMAGE bpm=120 rms=2626
+PASS  demo D1 CONTACT    loads and plays  name=CONTACT bpm=124 rms=2880
+PASS  demo D2 CONCRETE   loads and plays  name=CONCRETE bpm=130 rms=2460
+PASS  demo D3 STATIC     loads and plays  name=STATIC bpm=112 rms=1979
+PASS  demo D4 CORROSION  loads and plays  name=CORROSION bpm=135 rms=3024
+PASS  demo D5 NIGHTSHIFT loads and plays  name=NIGHTSHIFT bpm=104 rms=2672
+PASS  demo D6 WAREHOUSE  loads and plays  name=WAREHOUSE bpm=128 rms=3043
+PASS  demo D7 SIGNALLOSS loads and plays  name=SIGNALLOSS bpm=118 rms=2833
+PASS  demo D8 AFTERIMAGE loads and plays  name=AFTERIMAGE bpm=120 rms=2644
+PASS  DRIFT on the demo evolves every 4 bars (also in song mode)  8 evolutions in 62 s (8.0 phrases)
+PASS  every channel evolves: bass in every pattern, all 4 drum lanes  bass changed in 4/4 patterns, lanes [True, True, True, True]
+PASS  two listens evolve differently (entropy from button timing)  sound drift run1 cut 2 tune [0, 255, 0, 0] / run2 cut 1 tune [1, 1, 0, 1]
 PASS  5-minute run: no timing drift  2492 steps in 301.4s (expected 2491.3)
-PASS  5-minute run: still playing, ISR within budget  isr max 57 DIV
+PASS  5-minute run: still playing, ISR within budget  isr max 59 DIV
 PASS  5-minute CORRODE run: all 32 patterns valid  
 
-77/77 passed
+89/89 passed
