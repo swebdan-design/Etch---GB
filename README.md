@@ -14,7 +14,7 @@ Switch on, press START, and acid plays. From there you can perform it, reshape i
 
 LIVE is home: watch, play and program the pattern. SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about).
 
-**Living songs:** with EVO on DRIFT (the demo songs start this way), every 4 bars every channel changes a little, using randomness from your button timing, so no two listens are the same.
+**Living songs:** with EVO on DRIFT (the demo songs start this way), every 4 bars every channel changes a little, using randomness from your button timing, so in practice every listen is different. The manual (§12, *Will every listen be unique?*) explains how and the limits.
 
 Editing works the same everywhere: **A** places or toggles, **A + D-pad** changes values, **B + A** deletes.
 

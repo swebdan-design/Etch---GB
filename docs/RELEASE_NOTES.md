@@ -27,7 +27,7 @@ Set **EVO** to DRIFT on LIVE (all demo songs start this way). Every 4 bars, **ev
 - one hit in each drum lane;
 - a small step of the bass filter and of each drum's tuning.
 
-The randomness comes from the timing of your button presses, so **every listen is different**.
+The randomness comes from the timing of your button presses, so **in practice every listen is different**. It is not a guarantee; the manual explains the limits under *Will every listen be unique?*.
 
 Each channel stays bounded around the original. Each pattern of a song has its own memory (anchor), so a song breathes without wandering off. The sound drift is live-only: it is never saved, and STABLE restores your exact settings.
 

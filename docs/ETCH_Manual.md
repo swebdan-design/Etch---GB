@@ -13,7 +13,7 @@ ETCH turns a Game Boy into an acid bass synthesizer, a four-lane drum machine, a
 
 It is also a **Synth Centric music release**. The cartridge holds eight demo songs. Each one is a starting point that you can play as written, reshape, mutate and save as your own version. The instrument itself is the artwork.
 
-The demo songs are **living songs**: they start in DRIFT mode, so every four bars every channel changes a little. The changes come from real randomness — the timing of your button presses — so no two listens are the same.
+The demo songs are **living songs**: they start in DRIFT mode, so every four bars every channel changes a little. The changes are driven by the moment you press START and the timing of your button presses, so in practice every listen is different (see *Will every listen be unique?* in §12).
 
 **Who made it.** Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator. ETCH is a Synth Centric release.
 
@@ -314,7 +314,7 @@ To recreate a groove, select the CODE row, step through the digits with LEFT/RIG
 | Mode | Behaviour |
 |---|---|
 | **STABLE** | The pattern stays exactly as written. Probability and conditions still add variation as it plays. |
-| **DRIFT** | **A living song.** Every 4 bars, **every channel changes a little**: <ul><li>One small bass change: a note steps within the scale, an accent moves, a slide appears…</li><li>One hit in each drum lane.</li><li>A small step in the sound: bass filter, drum tuning.</li></ul> DRIFT **remembers your groove**, separately for every pattern of the song. Each channel can only stray a short way from the original before its changes start leading back. The randomness comes from the timing of your button presses, so every listen is different. All the demo songs start in DRIFT. |
+| **DRIFT** | **A living song.** Every 4 bars, **every channel changes a little**: <ul><li>One small bass change: a note steps within the scale, an accent moves, a slide appears…</li><li>One hit in each drum lane.</li><li>A small step in the sound: bass filter, drum tuning.</li></ul> DRIFT **remembers your groove**, separately for every pattern of the song. Each channel can only stray a short way from the original before its changes start leading back. The randomness comes from the timing of your button presses, so in practice every listen is different (see below). All the demo songs start in DRIFT. |
 | **CORRODE** | Every 2 bars, bigger changes. The motif itself mutates, and its repetitions change with it, so over a few minutes the line becomes something new that is clearly descended from where it started. |
 
 **MUT** (0–15) sets how far things may wander: with higher MUT the bass makes more changes and every lane may stray further.
@@ -323,6 +323,25 @@ The sound drift (filter and drum tuning) is applied live and is **never written 
 
 > **Workflow: a different song every listen**
 > Load a demo (FILE > LOAD, or just press START at power-on). On LIVE, put the cursor on **EVO**: the bottom line reads `EVOLVES EVERY 4 BARS`. Leave it running. If a moment is too good to lose, set EVO to STABLE to freeze it, and FILE > SAVE it.
+
+### Will every listen be unique?
+
+Almost always, but not with a guarantee. Here is how it works and where the limits are.
+
+**How the uniqueness is created**
+
+- When you press START on the title screen, ETCH records the exact moment of the press and uses it to seed all evolution.
+- Every later button press mixes in more timing.
+- The ghost-note dice (step probability) are reseeded the same way at every START.
+- In testing, two runs where START was pressed 11 frames apart (less than 0.2 seconds) evolved differently, in both the patterns and the sound drift.
+
+**Where the limits are**
+
+- **In practice it comes down to which frame START was pressed on.** The program runs in lockstep with the 60 Hz screen, so a listener who presses START somewhere between 2 and 20 seconds after switching on picks one of roughly a thousand starting points. Two people pressing on exactly the same frame is unlikely but possible: very roughly 1 in several hundred for a given pair. That figure is an estimate from how the system works, not a measurement.
+- **The randomness pool is 16-bit,** so in theory there are at most 65,536 possible evolution paths.
+- **Automated playback repeats.** An emulator replaying recorded input, or a script pressing START on the same frame every time, gets the identical evolution. That is why a recording such as the demo WAV is the same every time you play it.
+- **It only applies while EVO is DRIFT or CORRODE.** The demo songs start that way; in STABLE a song plays exactly as written.
+- **Different in detail, not in identity.** DRIFT is deliberately bounded, so two listens are clearly the same song with different small variations: notes, accents, hits, filter and drum tuning.
 
 Even in STABLE, **SELECT + A** evolves once, on demand, at the next bar line.
 
