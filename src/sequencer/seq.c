@@ -35,6 +35,7 @@ volatile uint8_t seq_chain_bar;
 volatile uint8_t seq_loop;
 volatile uint8_t seq_bar_total;
 volatile uint8_t seq_fill;
+volatile uint8_t seq_fill_hold;      /* latched fill: runs until toggled off */
 volatile uint8_t seq_activity;
 volatile uint8_t seq_step_event;
 volatile uint8_t seq_isr_max;
@@ -159,7 +160,7 @@ static void bar_boundary(void)
     uint8_t prev = seq_cur;
 
     seq_bar_total++;
-    if (fill_bars) {
+    if (fill_bars && !seq_fill_hold) {
         if (--fill_bars == 0) seq_fill = 0;
     }
     if (proj.chain.song && chain_jump != 0xFF) {
@@ -398,6 +399,7 @@ void seq_stop(void)
     CRITICAL {
         seq_playing = 0;
         seq_fill = 0;
+        seq_fill_hold = 0;
         fill_bars = 0;
         synth_gate_off();
         drums_silence();
@@ -426,6 +428,30 @@ void seq_jump_chain(uint8_t pos)
             chain_jump = pos;             /* honoured at the next bar line */
         }
     }
+}
+
+/* Latched fill on/off.  On: the fill plays bar after bar until switched off
+ * (the main loop supplies a fresh variation each bar via seq_fill_masks).
+ * Off: the groove returns immediately. */
+void seq_fill_latch(uint8_t on, const uint16_t *masks)
+{
+    CRITICAL {
+        if (on) {
+            memcpy(seq_fill_mask, masks, sizeof(seq_fill_mask));
+            seq_fill_hold = 1;
+            seq_fill = 1;
+            fill_bars = 1;
+        } else {
+            seq_fill_hold = 0;
+            seq_fill = 0;
+            fill_bars = 0;
+        }
+    }
+}
+
+void seq_fill_masks(const uint16_t *masks)
+{
+    CRITICAL { memcpy(seq_fill_mask, masks, sizeof(seq_fill_mask)); }
 }
 
 void seq_trigger_fill(const uint16_t *masks)

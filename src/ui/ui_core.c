@@ -253,7 +253,7 @@ void ui_header_update(void)
     }
     ui_num(14, 0, proj.synth.bpm, 3);
 flags:
-    ui_put(13, 0, seq_fill ? T_FILLMARK : 0);
+    ui_put(13, 0, seq_fill_hold ? ('F' - 32 + 96) : (seq_fill ? T_FILLMARK : 0));
     ui_put(17, 0, (proj.gen.mode != EVO_STABLE) ? T_EVO : 0);
     ui_put(18, 0, (evo_undo_pat != 0xFF) ? ('U' - 32) : 0);
     ui_put(19, 0, seq_playing ? ((seq_step & 3) == 0 && (seq_step_event & 1) ? T_DOT : T_PLAY) : T_STOP);

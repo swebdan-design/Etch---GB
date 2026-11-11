@@ -80,6 +80,7 @@ void app_pattern_edited(void);         /* user changed the current pattern     *
 void app_audition(uint8_t note, uint8_t accent);
 extern uint8_t app_last_note;          /* note placed by A on an empty step */
 void app_fill(void);
+void app_fill_toggle(void);             /* latched fill on/off */
 uint16_t app_regen(uint8_t what);       /* GEN_ALL / GEN_BASS / GEN_DRUMS; mask of new steps */
 void app_evolve_now(void);
 void app_undo(void);

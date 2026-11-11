@@ -52,6 +52,7 @@ extern volatile uint8_t seq_chain_bar;
 extern volatile uint8_t seq_loop;          /* times current pattern looped */
 extern volatile uint8_t seq_bar_total;     /* free-running bar counter     */
 extern volatile uint8_t seq_fill;          /* fill active                  */
+extern volatile uint8_t seq_fill_hold;     /* fill latched on              */
 extern volatile uint8_t seq_activity;      /* bit0 bass, bit1..4 lanes     */
 extern volatile uint8_t seq_step_event;    /* incremented each step        */
 extern volatile uint8_t seq_isr_max;       /* worst ISR length, DIV ticks  */
@@ -76,6 +77,8 @@ void seq_set_tempo(void);                  /* after bpm/swing change       */
 void seq_queue_pattern(uint8_t p);
 void seq_jump_chain(uint8_t pos);
 void seq_trigger_fill(const uint16_t *masks);
+void seq_fill_latch(uint8_t on, const uint16_t *masks);
+void seq_fill_masks(const uint16_t *masks);
 void seq_pattern_edited(void);             /* invalidates evo candidate    */
 uint8_t seq_undo(void);
 void seq_backup_for_undo(uint8_t pat);

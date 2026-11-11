@@ -14,6 +14,7 @@
  *              A+</> semitone      A+UP/DOWN octave      B+A remove
  *   drum step  A     hit on / off                         B+A remove
  *   macro      </>   adjust (hold to sweep), A+UP/DOWN coarse,  A tap = FILL
+ *   anywhere   B tap  latched FILL on / off (also SELECT+START on any screen)
  */
 #pragma bank 255
 #include <gbdk/platform.h>
@@ -248,6 +249,9 @@ void scr_live_frame(void) BANKED
     } else if (nav & (J_LEFT | J_RIGHT)) {
         adjust((uint8_t)(cy - N_LANES), (nav & J_RIGHT) ? 1 : -1);   /* plain </> sweeps macros */
     }
+
+    /* B (tap): fill on / off -- the quickest way to drop a fill in and out */
+    if (ui_b_tap()) { app_fill_toggle(); draw_help(); }
 
     /* ---- editing -------------------------------------------------------- */
     if (cy >= N_LANES) {

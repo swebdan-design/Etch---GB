@@ -3,6 +3,13 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
+## Version 2.5 (2026-11-11)
+
+- **FILL on/off toggle.** Tap **B** on LIVE, or press **SELECT + START** on any screen, to latch the drum fill on. It keeps playing bar after bar until you press the same button again, and switching it off returns to the groove immediately.
+  - The header shows an inverted **F** while the fill is latched.
+  - The one-shot fill (A on a macro row) is unchanged.
+  - Stopping playback switches the fill off.
+
 ## Version 2.4 (2026-11-11)
 
 - **REGEN on LIVE.** The BPM row is now **RGN**. Tapping A instantly replaces exactly half of the bar (8 of the 16 steps, chosen at random) with new material in the song's key, scale and style.

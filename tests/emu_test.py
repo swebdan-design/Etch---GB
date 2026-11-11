@@ -108,6 +108,16 @@ def spectral_centroid(x, sr):
     return float((spec * f).sum() / (spec.sum() + 1e-9))
 
 
+def harmonic_profile(x, sr, f0=65.4, n=15):
+    """relative strength of harmonics 1..n of f0 (sums to 1)"""
+    x = x - x.mean()
+    N = 1 << 18
+    sp = np.abs(np.fft.rfft(x * np.hanning(len(x)), n=N))
+    f = np.fft.rfftfreq(N, 1 / sr)
+    h = np.array([sp[(f > k * f0 * 0.97) & (f < k * f0 * 1.03)].max() for k in range(1, n + 1)])
+    return h / h.sum()
+
+
 def dominant_freq(x, sr, lo=25, hi=1000):
     x = x - x.mean()
     spec = np.abs(np.fft.rfft(x * np.hanning(len(x)), n=1 << 18))
@@ -301,15 +311,19 @@ def main():
         cents[cut] = spectral_centroid(x, sr)
     rec("CUTOFF changes timbre (spectral centroid rises)", cents[4] < cents[16] < cents[31],
         " ".join("cut%d=%.0fHz" % (k, v) for k, v in cents.items()))
-    resc = {}
-    for res in (0, 7):
+    # resonance: compare the harmonic profile of the note (C2) at RES 0 and 7
+    # against a control (RES 0 captured twice) -- robust to capture alignment
+    prof = {}
+    for tag, res in (("a", 0), ("b", 0), ("r", 7)):
         et.pset(SYNTH + S_CUT, 12); et.pset(SYNTH + S_RES, res)
         et.e.press("start"); et.e.tick(30)
-        x, sr = capture(et, os.path.join(art, "res%d.wav" % res), 90)
+        x, sr = capture(et, os.path.join(art, "res%s.wav" % tag), 240)
         et.e.press("start"); et.e.tick(10)
-        resc[res] = spectral_centroid(x, sr)
-    rec("RESONANCE changes timbre", abs(resc[7] - resc[0]) > 0.08 * resc[0],
-        "res0=%.0fHz res7=%.0fHz" % (resc[0], resc[7]))
+        prof[tag] = harmonic_profile(x, sr)
+    ctrl = float(np.abs(prof["a"] - prof["b"]).sum())
+    dres = float(np.abs(prof["a"] - prof["r"]).sum())
+    rec("RESONANCE changes timbre (harmonic profile vs control)", dres > 3 * ctrl and dres > 0.3,
+        "profile distance res0->res7 %.3f, control (res0 twice) %.3f" % (dres, ctrl))
     # pitch: C2 = 65.4 Hz fundamental
     et.pset(SYNTH + S_CUT, 31); et.pset(SYNTH + S_RES, 0)
     et.e.press("start"); et.e.tick(30)
@@ -431,7 +445,7 @@ def main():
     to_file(et)
     txt = "\n".join(et.e.screen_text())
     rec("FILE menu offers NEW / LOAD / SAVE / ABOUT",
-        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.4" in txt and "by Synth Centric" in txt)
+        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.5" in txt and "by Synth Centric" in txt)
     for _ in range(3):
         et.e.press("down")
     et.e.press("a"); et.e.tick(10)
@@ -602,6 +616,26 @@ def main():
     et.e.hold("a"); et.e.press("up"); et.e.release("a"); et.e.tick(3)
     rec("SONG: BPM still editable (A+UP = +10)", et.pb(SYNTH + S_BPM)[0] == bpm0 + 10,
         "%d -> %d" % (bpm0, et.pb(SYNTH + S_BPM)[0]))
+    et.stop()
+
+    # ---- latched FILL toggle: B on LIVE, SELECT+START anywhere ----------------
+    et = Etch(rom)
+    et.boot_to_live()
+    et.e.press("b"); et.e.tick(5)
+    rec("LIVE: B toggles the fill on (latched)", et.e.rd("seq_fill") == 1 and et.e.rd("seq_fill_hold") == 1,
+        et.e.screen_text()[1].strip())
+    rec("header shows the latched fill (F)", et.e.screen_text()[0][13] == "F", repr(et.e.screen_text()[0]))
+    b0 = et.e.rd("seq_bar_total")
+    et.e.tick(60 * 6)
+    rec("latched fill keeps playing across bars", et.e.rd("seq_fill") == 1 and (et.e.rd("seq_bar_total") - b0) % 256 >= 2)
+    et.e.press("b"); et.e.tick(3)
+    rec("LIVE: B toggles the fill off immediately", et.e.rd("seq_fill") == 0 and et.e.rd("seq_fill_hold") == 0)
+    sel(et, "right")                                         # on GEN
+    et.e.hold("select"); et.e.press("start", hold=5, after=3); et.e.release("select"); et.e.tick(5)
+    on = et.e.rd("seq_fill_hold") == 1 and et.e.rd("seq_playing") == 1
+    et.e.hold("select"); et.e.press("start", hold=5, after=3); et.e.release("select"); et.e.tick(5)
+    rec("SELECT+START toggles the fill on any screen without stopping playback",
+        on and et.e.rd("seq_fill_hold") == 0 and et.e.rd("seq_playing") == 1)
     et.stop()
 
     # ---- living songs: DRIFT evolves every channel, differently each listen --

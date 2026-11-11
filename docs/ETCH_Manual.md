@@ -1,7 +1,7 @@
 # ETCH — A Generative Acid Machine
 ### by Synth Centric
 
-**User Manual — version 2.4**
+**User Manual — version 2.5**
 
 ![ETCH title screen](images/screen_title.png)
 
@@ -49,10 +49,11 @@ ETCH has so far been verified in emulators only. See `HARDWARE_COMPATIBILITY.md`
 3. Press **DOWN** five times to reach **CUT**, then hold **RIGHT**. The filter opens and the bass starts to scream. Hold **LEFT** to close it again.
 4. Move up into the lanes. On the **KK** row, move to an empty step and press **A**: you have added a kick. Press **A** again to take it away.
 5. On the **BS** row, press **A** on an empty step to add a bass note. Hold **A** and press **RIGHT** to raise it a semitone, or **UP** for an octave.
-6. Move down to **RGN** and tap **A**: half the bar is instantly replaced with something new. Press **SELECT + B** to undo it.
-7. Press **SELECT + A**. At the next bar line, CORROSION rewrites a little of the line. **SELECT + B** undoes this too.
-8. Press **SELECT + LEFT** to open the step editor, and **SELECT + LEFT** again for the sound engine. **SELECT + RIGHT** brings you back.
-9. Press **START** to stop.
+6. Tap **B** for a drum fill; tap **B** again to drop back into the groove.
+7. Move down to **RGN** and tap **A**: half the bar is instantly replaced with something new. Press **SELECT + B** to undo it.
+8. Press **SELECT + A**. At the next bar line, CORROSION rewrites a little of the line. **SELECT + B** undoes this too.
+9. Press **SELECT + LEFT** to open the step editor, and **SELECT + LEFT** again for the sound engine. **SELECT + RIGHT** brings you back.
+10. Press **START** to stop.
 
 ---
 
@@ -93,7 +94,7 @@ On the macro and parameter lists, plain LEFT/RIGHT also changes the value, so yo
 | `P01` | The pattern now playing |
 | `>02` | The pattern queued for the next bar (shown instead of the S field) |
 | `S03` | Song position, when song mode is on |
-| Fill mark (left of the BPM) | A fill is playing |
+| Fill mark (left of the BPM) | A one-shot fill is playing; an inverted **F** means the fill is latched on |
 | `124` | BPM |
 | `x` over a bar | Evolution (DRIFT or CORRODE) is on |
 | `U` | An undo is available |
@@ -110,6 +111,7 @@ Line 2 shows messages such as SAVED, EVOLVED and UNDO, the screen map, and colum
 | SELECT + UP / DOWN | Queue the next / previous pattern (switches at the bar line) |
 | SELECT + A | Evolve now |
 | SELECT + B | Undo |
+| SELECT + START | FILL on / off (latched) |
 
 The complete list is in `CONTROLS.md`.
 
@@ -137,6 +139,8 @@ The top half is the whole pattern at a glance, and you can edit it directly:
 
 Accents, slides, ties, probability and conditions are set in TRACK.
 
+**FILL:** tap **B** anywhere on LIVE (or SELECT + START on any screen) to switch the drum fill on; it keeps playing bar after bar until you tap again, when the groove comes straight back. For a single fill that ends by itself at the bar line, tap **A** on a macro row (except RGN).
+
 The lower half holds nine **macros**. Move to one with UP/DOWN. **LEFT/RIGHT** changes it (hold to sweep), and **A + UP/DOWN** jumps in big steps. The bottom line always explains the row you're on.
 
 | Macro | Range | What it does | What you hear / when to use it |
@@ -153,11 +157,12 @@ The lower half holds nine **macros**. Move to one with UP/DOWN. **LEFT/RIGHT** c
 
 **Tempo (BPM) is on the SONG screen** (two screens to the right), together with swing. It also still shows in the header.
 
-### Four ways to change the music on the fly
+### Ways to change the music on the fly
 
 | | How | What changes | How long it lasts |
 |---|---|---|---|
-| **FILL** | Tap A on any macro row except RGN | Drums only: a drum fill in the song's style | Until the end of the bar (or the next bar if late), then the groove returns by itself |
+| **FILL (latched)** | **Tap B** on LIVE, or **SELECT + START** on any screen | Drums only: the song's drum fill | **On until you switch it off** (same button). Off returns to the groove immediately. |
+| **FILL (one-shot)** | Tap A on any macro row except RGN | The same fill, once | Until the end of the bar (or the next bar if late), then the groove returns by itself |
 | **REGEN** | Tap A on the RGN row | Exactly 8 of the 16 steps get new material: bass, drums or both | Permanent (undo with SELECT + B) |
 | **EVOLVE NOW** | SELECT + A, anywhere | A small mutation, as in DRIFT (or CORRODE if that is the mode) | Permanent, starting at the next bar (undo with SELECT + B) |
 | **EVO** | Set the EVO row to DRIFT or CORRODE | The song keeps changing by itself, every 4 or 2 bars | Until you set STABLE |

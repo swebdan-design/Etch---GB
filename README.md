@@ -71,7 +71,7 @@ make emutest
 
 - `make hosttest` runs the CORROSION unit tests on the host (32 checks).
 - `tests/sameboy/build.sh` builds the optional emulator harness. Point it at a SameBoy checkout that has run `make lib bootroms`; RGBDS is needed for the boot ROMs.
-- `make emutest` runs the 95 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
+- `make emutest` runs the 100 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
 
 `tests/profile.py` gives a per-function CPU profile of the ROM. `tools/record_demo.py` re-records the demo WAV.
 

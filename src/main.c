@@ -112,6 +112,20 @@ void app_audition(uint8_t note, uint8_t accent)
     }
 }
 
+/* FILL toggle (B on LIVE, or SELECT+START anywhere): latch on / off */
+void app_fill_toggle(void)
+{
+    uint16_t m[NUM_LANES];
+    if (seq_fill_hold) {
+        seq_fill_latch(0, m);
+        ui_msg("FILL OFF");
+    } else {
+        corr_fill(&proj.pat[seq_cur], (uint16_t)(sys_time ^ ((uint16_t)DIV_REG << 8)), m);
+        seq_fill_latch(1, m);
+        ui_msg("FILL ON  (B: OFF)");
+    }
+}
+
 void app_fill(void)
 {
     uint16_t m[NUM_LANES];
@@ -294,6 +308,7 @@ static void frame_screen(void)
 }
 
 static uint8_t show_map;
+static uint8_t fill_bar, fill_pat = 0xFF;
 
 static void global_keys(void)
 {
@@ -315,6 +330,7 @@ static void global_keys(void)
         }
         if (key_pressed & J_A) app_evolve_now();
         if (key_pressed & J_B) app_undo();
+        if (key_pressed & J_START) app_fill_toggle();      /* SELECT+START: fill on/off */
     } else if (key_pressed & J_START) {
         if (seq_playing) seq_stop();
         else { seq_seed_live(ui_entropy); seq_start(); }
@@ -365,6 +381,14 @@ void main(void)
             if (show_map) { show_map = 0; ui_msg_map(app_screen); }
         } else {
             frame_screen();
+        }
+        /* a latched fill plays a fresh variation every bar */
+        if (seq_fill_hold && (seq_bar_total != fill_bar || seq_cur != fill_pat)) {
+            uint16_t m[NUM_LANES];
+            fill_bar = seq_bar_total;
+            fill_pat = seq_cur;
+            corr_fill(&proj.pat[seq_cur], (uint16_t)(evo_random()), m);
+            seq_fill_masks(m);
         }
         ui_header_update();
         ui_msg_tick();

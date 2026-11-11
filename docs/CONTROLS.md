@@ -42,6 +42,7 @@ On list screens (the LIVE macros, SYNTH, GEN, SONG), plain LEFT/RIGHT also chang
 | SELECT + UP / DOWN | Queue the next / previous pattern. It switches at the bar line, and immediately if stopped. Song mode turns off. |
 | SELECT + A | **Evolve now**: CORROSION mutates the pattern at the next bar line. In STABLE mode it uses a DRIFT-sized mutation. |
 | SELECT + B | **Undo** the last evolution, generation, groove load or clear (one level) |
+| SELECT + START | **FILL on / off** (latched: the fill keeps playing every bar until you switch it off) |
 
 ## LIVE — home: overview, step entry, performance
 
@@ -67,7 +68,8 @@ CUT ███████      7     macros ...
 | drum step | B + A | Remove |
 | macro row | LEFT / RIGHT | Adjust; hold to sweep |
 | macro row | A + UP / DOWN | Adjust coarse |
-| macro row | A (tap) | **FILL**: a drum fill until the bar line, or through the next bar if late in the bar (all macro rows except RGN) |
+| anywhere on LIVE | **B** (tap) | **FILL on / off** (latched; same as SELECT+START). Off returns to the groove immediately. |
+| macro row | A (tap) | **One-shot FILL**: a drum fill until the bar line, or through the next bar if late in the bar (all macro rows except RGN) |
 | RGN row | A (tap) | **REGEN**: exactly half the bar (8 random steps) is replaced with new material in the song's key, scale and style. SELECT+B undoes it. |
 | RGN row | LEFT / RIGHT | What REGEN replaces: ALL (bass + drums), BASS or DRUMS |
 | EVO row | LEFT / RIGHT | **STABLE** (no change) / **DRIFT** (a living song: every 4 bars every channel changes a little) / **CORRODE** (bigger changes every 2 bars) |

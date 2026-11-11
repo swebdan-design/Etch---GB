@@ -52,7 +52,7 @@ This report gives the result of every check that was actually run, and states cl
 
 ## 3. Emulator integration tests (`make emutest`, SameBoy DMG)
 
-**95 / 95 checks passed** on the release ROM, version 2.4 (SHA-256 `c2062f6d09ad819617bfaf87ea5bc5f98382a6494bf805aca9d8d082817722c5`). The raw results are in [`emu_results.txt`](emu_results.txt).
+**100 / 100 checks passed** on the release ROM, version 2.5 (SHA-256 `bf2c82a4d307a0cd7da12d9e4738a4d3b082e3e98aafcc16a40fd1e7c76d0b32`). The raw results are in [`emu_results.txt`](emu_results.txt).
 
 ### Boot and branding
 
@@ -74,7 +74,7 @@ This report gives the result of every check that was actually run, and states cl
 |---|---|---|
 | Output during playback | RMS 2 875 | PASS |
 | CUTOFF changes timbre | Spectral centroid rises: 2 953 Hz (cut 4) → 3 388 Hz (cut 16) → 3 736 Hz (cut 31) | PASS |
-| RESONANCE changes timbre | Centroid 3 251 Hz (res 0) → 3 580 Hz (res 7) | PASS |
+| RESONANCE changes timbre | Harmonic profile of the C2 note (harmonics 1–15), RES 0 vs RES 7, against a control (RES 0 captured twice): RES 0 → 7 changed the profile by **1.083** (the pass threshold is 0.3, and it must also exceed 3× the control). In this run the control's two captures were identical (0.000). In prototyping at other timing offsets, the control measured 0.095 against a resonance distance of 1.03. | PASS |
 | Pitch | C2 measured at 65.4 Hz by FFT | PASS |
 | SLIDE is continuous | 20 distinct intermediate periods between C2 and C3 | PASS |
 | ACCENT | Accented steps RMS 1 417 vs 970 for unaccented | PASS |
@@ -134,6 +134,13 @@ This report gives the result of every check that was actually run, and states cl
 - Loading goes to LIVE and starts playback.
 - B+A, A in SAVE erases a slot and clears its "last saved" star.
 
+### Latched FILL (2.5)
+
+- Tapping B on LIVE latches the fill on: the message reads `FILL ON (B: OFF)` and the header shows an inverted F.
+- The fill keeps playing across bars.
+- Tapping B again switches it off immediately.
+- On GEN, SELECT+START toggles the fill on and off without stopping playback.
+
 ### REGEN and BPM (2.4)
 
 - The LIVE row that used to be BPM is now **RGN**, and its help line reads `A:REGEN  </>:WHAT`.
@@ -174,7 +181,7 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
 | PyBoy: boot, title (`by Synth Centric`), LIVE, playback, audio present | PASS (PyBoy's timer runs about 2 % slow; it is not used for timing) |
 | Main-loop responsiveness | About 47 iterations/s on LIVE in STABLE (worst 2 frames). In CORRODE, one iteration of up to 7 frames per phrase while a mutation is computed. Presses are latched in the VBlank ISR, so none are lost. |
 | CPU profile (`tests/profile.py`) | Audio ISR about 23 % of CPU on average |
-| Memory | ROM bank 0 93 %, banks 1–3 nearly full, bank 4 69 %, banks 5–7 free; RAM data ends at 0xD017 (about 4 KB below the stack) |
+| Memory | ROM bank 0 95 %, banks 1–3 nearly full, bank 4 69 %, banks 5–7 free; RAM data ends at 0xD017 (about 4 KB below the stack) |
 | Clean build | `make clean && make` succeeds (about 25 s) |
 | Source archive | `release/ETCH_Source.zip` extracted into an empty directory and built with GBDK-2020 4.3.0: **byte-identical ROM** (same SHA-256) |
 | Full regeneration | Deleting all generated data (wavetables, LUTs, engine tables, graphics, tracks) in the extracted copy and rebuilding regenerates identical files and an identical ROM |
@@ -205,6 +212,7 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
   - CORRODE filled every step with accents; fixed with density and accent homeostasis.
 - **Evolution stalled after chain changes:** the candidate is now retargeted when playback moves to another pattern.
 - **Build reproducibility:** a generated source was not listed explicitly in the Makefile, so it would not regenerate after deletion. Fixed.
+- **2.5 test fix:** the RESONANCE check compared spectral centroids. Its result swung between 5 % and 10 % depending on how the capture window lined up with the notes, so it occasionally failed. It now compares harmonic profiles against a control capture, which is stable.
 - **2.4:** the first REGEN version took about 12 frames per tap. It is now pre-composed in the background.
 - **2.4 test isolation:** the synth timbre measurements ran in DRIFT, where the new sound drift moved the cutoff between captures. They now run in STABLE.
 - **2.3:** the DRIFT memory used a single anchor, so in song mode it reset on every pattern change and could wander. There are now per-pattern anchors.

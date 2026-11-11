@@ -8,7 +8,7 @@ PASS  START on title -> LIVE screen  #LIVE #P01S01 124# #
 PASS  START on title starts playback immediately  
 PASS  tempo accuracy (124 BPM)  83 steps in 10.046s, expected 83.0
 PASS  worst-case timer ISR shorter than one tick (64 DIV)  54 DIV ticks = 13824 cycles
-PASS  audio output present during playback  rms=3164
+PASS  audio output present during playback  rms=3080
 PASS  SELECT+LEFT from LIVE -> TRACK  #TRACK#P01S03 124#U#
 PASS  TRACK shows column titles   # NOT ASL KSHO P CD
 PASS  SELECT+LEFT from TRACK -> SYNTH  
@@ -41,12 +41,12 @@ PASS  SYNTH: drum LEVEL default full
 PASS  SYNTH: B+A restores the default  
 PASS  back to LIVE after editing  
 PASS  STABLE resets the live sound drift  
-PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=3248Hz cut16=3427Hz cut31=3758Hz
-PASS  RESONANCE changes timbre  res0=3264Hz res7=3554Hz
+PASS  CUTOFF changes timbre (spectral centroid rises)  cut4=3247Hz cut16=3438Hz cut31=3758Hz
+PASS  RESONANCE changes timbre (harmonic profile vs control)  profile distance res0->res7 1.083, control (res0 twice) 0.000
 PASS  bass pitch correct (C2 = 65.4 Hz)  measured 65.4 Hz
 PASS  SLIDE glides through intermediate pitches  19 distinct periods between C2 (1046) and C3 (1547)
-PASS  ACCENT audibly louder/brighter  step rms 1416 vs 969
-PASS  kick/snare/hat lanes produce sound  rms=2611
+PASS  ACCENT audibly louder/brighter  step rms 1417 vs 970
+PASS  kick/snare/hat lanes produce sound  rms=2657
 PASS  bass + kick + snare + hat play simultaneously (CH1-4 active)  NR52 channel bits=F
 PASS  CORRODE commits mutations at phrase boundaries  7 commits in 30 s
 PASS  CORRODE changed the pattern  
@@ -74,24 +74,29 @@ PASS  corrupted slot detected (checksum)
 PASS  corrupted slot refused, project untouched  
 PASS  v1 (ETCH 1.0) slot is recognised  
 PASS  v1 slot loads with default drum voicing  bpm=141 voicing=[8, 8, 8, 8, 8, 8, 8, 8, 15, 15, 15, 15]
-PASS  demo D1 CORRODE    loads and plays  name=CORRODE bpm=124 rms=2887
-PASS  demo D2 SLAG       loads and plays  name=SLAG bpm=130 rms=2437
-PASS  demo D3 303HZ      loads and plays  name=303HZ bpm=112 rms=1943
-PASS  demo D4 CAUSTIC    loads and plays  name=CAUSTIC bpm=135 rms=2988
-PASS  demo D5 RUSTROT    loads and plays  name=RUSTROT bpm=104 rms=2661
-PASS  demo D6 VOLTAGE    loads and plays  name=VOLTAGE bpm=128 rms=2995
-PASS  demo D7 HEXDRUM    loads and plays  name=HEXDRUM bpm=118 rms=2814
-PASS  demo D8 ACIDBURN   loads and plays  name=ACIDBURN bpm=120 rms=2576
+PASS  demo D1 CORRODE    loads and plays  name=CORRODE bpm=124 rms=2888
+PASS  demo D2 SLAG       loads and plays  name=SLAG bpm=130 rms=2438
+PASS  demo D3 303HZ      loads and plays  name=303HZ bpm=112 rms=1976
+PASS  demo D4 CAUSTIC    loads and plays  name=CAUSTIC bpm=135 rms=3008
+PASS  demo D5 RUSTROT    loads and plays  name=RUSTROT bpm=104 rms=2651
+PASS  demo D6 VOLTAGE    loads and plays  name=VOLTAGE bpm=128 rms=2976
+PASS  demo D7 HEXDRUM    loads and plays  name=HEXDRUM bpm=118 rms=2770
+PASS  demo D8 ACIDBURN   loads and plays  name=ACIDBURN bpm=120 rms=2673
 PASS  LIVE: the BPM row is now REGEN  RGN 50% NEW  ALL    
 PASS  LIVE: REGEN help line  A:REGEN  </>:WHAT   
-PASS  LIVE: A on REGEN replaces half the bar at once  steps touched [0, 4, 6, 8, 10, 11, 12, 13] (8 chosen; neighbouring slide/tie markers may be tidied)
+PASS  LIVE: A on REGEN replaces half the bar at once  steps touched [1, 2, 3, 4, 7, 9, 10, 15] (8 chosen; neighbouring slide/tie markers may be tidied)
 PASS  LIVE: SELECT+B undoes a REGEN  
 PASS  SONG: BPM still editable (A+UP = +10)  124 -> 134
+PASS  LIVE: B toggles the fill on (latched)  FILL ON  (B: OFF)
+PASS  header shows the latched fill (F)  '#LIVE #P01S01F124# #'
+PASS  latched fill keeps playing across bars  
+PASS  LIVE: B toggles the fill off immediately  
+PASS  SELECT+START toggles the fill on any screen without stopping playback  
 PASS  DRIFT on the demo evolves every 4 bars (also in song mode)  8 evolutions in 62 s (8.0 phrases)
 PASS  every channel evolves: bass in every pattern, all 4 drum lanes  bass changed in 4/4 patterns, lanes [True, True, True, True]
-PASS  two listens evolve differently (entropy from button timing)  sound drift run1 cut 255 tune [0, 255, 1, 1] / run2 cut 254 tune [0, 0, 255, 1]
+PASS  two listens evolve differently (entropy from button timing)  sound drift run1 cut 2 tune [255, 1, 0, 0] / run2 cut 254 tune [0, 0, 255, 1]
 PASS  5-minute run: no timing drift  2492 steps in 301.4s (expected 2491.3)
-PASS  5-minute run: still playing, ISR within budget  isr max 58 DIV
+PASS  5-minute run: still playing, ISR within budget  isr max 59 DIV
 PASS  5-minute CORRODE run: all 32 patterns valid  
 
-95/95 passed
+100/100 passed
