@@ -33,7 +33,7 @@ This report gives the result of every check that was actually run, and states cl
 
 ## 2. Host unit tests — CORROSION (`make hosttest`)
 
-**36 checks, 0 failures.**
+**44 checks, 0 failures.**
 
 | Area | What was checked | Result |
 |---|---|---|
@@ -46,12 +46,13 @@ This report gives the result of every check that was actually run, and states cl
 | Locks | 8 000 mutations (DRIFT and CORRODE, intensity 15) with 3 locked steps and 2 locked lanes: **0 violations, 0 invalid patterns**. Bass lock over 100 CORRODE generations; pattern lock; GENERATE preserves locked steps and lanes. | PASS |
 | DRIFT (living song) vs CORRODE | Over 30 grooves × 16 phrases at intensity 8: DRIFT changed **every channel** (bass + 4 drum lanes) in **480 / 480** phrases. Divergence stays bounded: mean 7.4, maximum 12 (the bound). Bass steps changed 2.4, repetition 0.46. CORRODE: divergence 24.9, bass steps changed 14.0, repetition 0.60. A locked lane is left alone while the others move. | PASS |
 | Mutation determinism and generation counter | | PASS |
+| REGEN | 200 runs across styles and scales: exactly 8 steps picked every time. Nothing outside them changed except inaudible slide/tie tidy-ups. No lock violations, all notes in scale. BASS mode leaves the drums alone and DRUMS mode the bass; a pattern lock blocks it; different seeds give different results. | PASS |
 | Seed code | Encode/decode round trip; a code reproduces the groove exactly; garbage rejected | PASS |
 | Fill | ACID fill has a snare roll and keeps the downbeat kicks | PASS |
 
 ## 3. Emulator integration tests (`make emutest`, SameBoy DMG)
 
-**89 / 89 checks passed** on the release ROM, version 2.3 (SHA-256 `0508ca2f30a95b69bb539b37b56491891b6d130e54f541abba8d426addd4df29`). The raw results are in [`emu_results.txt`](emu_results.txt).
+**95 / 95 checks passed** on the release ROM, version 2.4 (SHA-256 `c2062f6d09ad819617bfaf87ea5bc5f98382a6494bf805aca9d8d082817722c5`). The raw results are in [`emu_results.txt`](emu_results.txt).
 
 ### Boot and branding
 
@@ -133,6 +134,15 @@ This report gives the result of every check that was actually run, and states cl
 - Loading goes to LIVE and starts playback.
 - B+A, A in SAVE erases a slot and clears its "last saved" star.
 
+### REGEN and BPM (2.4)
+
+- The LIVE row that used to be BPM is now **RGN**, and its help line reads `A:REGEN  </>:WHAT`.
+- Tapping A replaced half the bar at once: steps 0, 4, 6, 8, 10, 11, 12 and 13 changed, within 4 frames of release.
+- SELECT+B restores the bar exactly.
+- **The tap is instant.** The longest main-loop pass during a tap was 1–2 frames, because the material is pre-composed in the background. Composing it on demand had cost about 12 frames.
+- BPM is still editable on SONG: A+UP gives +10 (124 → 134).
+- Switching EVO to STABLE resets the live sound drift to zero.
+
 ### Living songs (2.3)
 
 - **DRIFT on demo D1, in song mode:** 8 evolutions in 62 s (8.0 phrases). In 1.1, song mode skipped most phrases; this was fixed.
@@ -164,7 +174,7 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
 | PyBoy: boot, title (`by Synth Centric`), LIVE, playback, audio present | PASS (PyBoy's timer runs about 2 % slow; it is not used for timing) |
 | Main-loop responsiveness | About 47 iterations/s on LIVE in STABLE (worst 2 frames). In CORRODE, one iteration of up to 7 frames per phrase while a mutation is computed. Presses are latched in the VBlank ISR, so none are lost. |
 | CPU profile (`tests/profile.py`) | Audio ISR about 23 % of CPU on average |
-| Memory | ROM bank 0 92 %, banks 1–3 nearly full, bank 4 69 %, banks 5–7 free; RAM data ends at 0xD017 (about 4 KB below the stack) |
+| Memory | ROM bank 0 93 %, banks 1–3 nearly full, bank 4 69 %, banks 5–7 free; RAM data ends at 0xD017 (about 4 KB below the stack) |
 | Clean build | `make clean && make` succeeds (about 25 s) |
 | Source archive | `release/ETCH_Source.zip` extracted into an empty directory and built with GBDK-2020 4.3.0: **byte-identical ROM** (same SHA-256) |
 | Full regeneration | Deleting all generated data (wavetables, LUTs, engine tables, graphics, tracks) in the extracted copy and rebuilding regenerates identical files and an identical ROM |
@@ -195,6 +205,8 @@ After 5 minutes of CORRODE in song mode, the sequencer was still playing, the IS
   - CORRODE filled every step with accents; fixed with density and accent homeostasis.
 - **Evolution stalled after chain changes:** the candidate is now retargeted when playback moves to another pattern.
 - **Build reproducibility:** a generated source was not listed explicitly in the Makefile, so it would not regenerate after deletion. Fixed.
+- **2.4:** the first REGEN version took about 12 frames per tap. It is now pre-composed in the background.
+- **2.4 test isolation:** the synth timbre measurements ran in DRIFT, where the new sound drift moved the cutoff between captures. They now run in STABLE.
 - **2.3:** the DRIFT memory used a single anchor, so in song mode it reset on every pattern change and could wander. There are now per-pattern anchors.
 - **2.3:** song-mode evolutions were skipped at chain boundaries. Evolution now targets the next bar's pattern.
 - **2.3:** evolution randomness was derived from the project seed, so every listener heard the same evolution. It now uses an entropy pool from button timing.

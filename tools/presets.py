@@ -123,7 +123,7 @@ def track_bytes(t):
 ACID_KIT = [0, 2, 0, 0]
 
 TRACKS = [
-    dict(title="FIRST CONTACT", short="CONTACT", bpm=124, style="ACID",
+    dict(title="CORRODE", short="CORRODE", bpm=124, style="ACID",
          synth=dict(wave="SAW", cut=7, res=5, env=10, dec=7, acc=10, drive="SOFT", slide=5, swing=1),
          gen=dict(key=9, scale="MINOR", density=9, sync=5, accent=8, slide=7, octave=0, mutation=5, mode="DRIFT", seed=0x0F1C),
          patterns=[
@@ -138,7 +138,7 @@ TRACKS = [
          ],
          chain=[(0, 4), (1, 4), (0, 4), (2, 2), (3, 8), (1, 4), (2, 2)]),
 
-    dict(title="CONCRETE", short="CONCRETE", bpm=130, style="ACID",
+    dict(title="SLAG", short="SLAG", bpm=130, style="ACID",
          synth=dict(wave="SQUARE", cut=5, res=6, env=12, dec=4, acc=12, drive="SOFT", slide=4),
          gen=dict(key=4, scale="MINOR", density=12, sync=3, accent=9, slide=5, octave=0, mutation=7, mode="DRIFT", seed=0xC0C2),
          patterns=[
@@ -151,7 +151,7 @@ TRACKS = [
          ],
          chain=[(0, 8), (1, 4), (2, 4), (0, 8), (1, 4)]),
 
-    dict(title="STATIC", short="STATIC", bpm=112, style="ELECTRO",
+    dict(title="303HZ", short="303HZ", bpm=112, style="ELECTRO",
          synth=dict(wave="HOLLOW", cut=4, res=6, env=8, dec=9, acc=8, drive="OFF", slide=8,
                     lfo_rate=4, lfo_depth=5, lfo_dest="CUT", lfo_shape="TRI"),
          gen=dict(key=2, scale="PHRYGIAN", density=6, sync=9, accent=7, slide=6, octave=0, mutation=3, mode="DRIFT", seed=0x5747),
@@ -165,7 +165,7 @@ TRACKS = [
          ],
          chain=[(0, 4), (1, 4), (0, 4), (2, 4), (1, 4)]),
 
-    dict(title="CORROSION", short="CORROSION", bpm=135, style="ACID",
+    dict(title="CAUSTIC", short="CAUSTIC", bpm=135, style="ACID",
          synth=dict(wave="SAW", cut=3, res=7, env=14, dec=5, acc=15, drive="HARD", slide=6),
          gen=dict(key=7, scale="MINOR", density=11, sync=6, accent=12, slide=8, octave=0, mutation=9, mode="CORRODE", seed=0xC0DE),
          patterns=[
@@ -176,7 +176,7 @@ TRACKS = [
          ],
          chain=[(0, 8), (1, 4)]),
 
-    dict(title="NIGHT SHIFT", short="NIGHTSHIFT", bpm=104, style="MINIMAL",
+    dict(title="RUSTROT", short="RUSTROT", bpm=104, style="MINIMAL",
          synth=dict(wave="HOLLOW", cut=9, res=4, env=6, dec=12, acc=6, drive="OFF", slide=11,
                     lfo_rate=3, lfo_depth=7, lfo_dest="CUT", lfo_shape="TRI", gate=2, swing=3),
          gen=dict(key=0, scale="MINOR", density=5, sync=4, accent=5, slide=9, octave=1, mutation=4, mode="DRIFT", seed=0x4E17),
@@ -188,7 +188,7 @@ TRACKS = [
          ],
          chain=[(0, 4), (1, 4)]),
 
-    dict(title="WAREHOUSE", short="WAREHOUSE", bpm=128, style="ACID",
+    dict(title="VOLTAGE", short="VOLTAGE", bpm=128, style="ACID",
          synth=dict(wave="SQUARE", cut=6, res=5, env=11, dec=6, acc=11, drive="SOFT", slide=5),
          gen=dict(key=5, scale="MINOR", density=12, sync=5, accent=9, slide=6, octave=0, mutation=6, mode="DRIFT", seed=0x3A7E),
          patterns=[
@@ -201,7 +201,7 @@ TRACKS = [
          ],
          chain=[(0, 4), (1, 4), (0, 4), (2, 2), (1, 4), (0, 4)]),
 
-    dict(title="SIGNAL LOSS", short="SIGNALLOSS", bpm=118, style="BROKEN",
+    dict(title="HEXDRUM", short="HEXDRUM", bpm=118, style="BROKEN",
          synth=dict(wave="BITE", cut=8, res=6, env=9, dec=5, acc=10, drive="HARD", slide=3,
                     lfo_rate=9, lfo_depth=10, lfo_dest="RES", lfo_shape="SH"),
          gen=dict(key=11, scale="PHRYGIAN", density=7, sync=12, accent=9, slide=4, octave=0, mutation=6, mode="CORRODE", seed=0x5105),
@@ -213,7 +213,7 @@ TRACKS = [
          ],
          chain=[(0, 4), (1, 4)]),
 
-    dict(title="AFTERIMAGE", short="AFTERIMAGE", bpm=120, style="MINIMAL",
+    dict(title="ACIDBURN", short="ACIDBURN", bpm=120, style="MINIMAL",
          synth=dict(wave="HOLLOW", cut=11, res=3, env=5, dec=10, acc=5, drive="OFF", slide=9,
                     lfo_rate=2, lfo_depth=4, lfo_dest="CUT", lfo_shape="TRI", gate=2),
          gen=dict(key=9, scale="DORIAN", density=4, sync=6, accent=4, slide=8, octave=0, mutation=2, mode="DRIFT", seed=0xAF7E),

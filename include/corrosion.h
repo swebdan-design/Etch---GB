@@ -37,6 +37,19 @@ void     corr_generate(pattern_t *p, const gen_t *g, uint8_t what) ETCH_BANKED;
 uint8_t  corr_mutate(pattern_t *dst, const pattern_t *src, const pattern_t *anchor,
                      const gen_t *g, uint8_t mode, uint8_t intensity, uint16_t seed) ETCH_BANKED;
 
+/* REGEN: replace exactly half of the pattern (8 of 16 steps, chosen at
+ * random among unlocked steps) with freshly generated material in the GEN
+ * key / scale / style.  what = GEN_BASS, GEN_DRUMS or GEN_ALL.  Locked steps,
+ * locked lanes and a locked bass line are never touched; if fewer than 8
+ * steps are free, all free steps are replaced.  Returns the mask of replaced
+ * steps (bit n = step n).  A slide leading into a replaced step may be
+ * cleared by sanitising if it no longer glides into a note. */
+uint16_t corr_regen(pattern_t *p, const gen_t *g, uint16_t seed, uint8_t what) ETCH_BANKED;
+/* the two halves of corr_regen, so the expensive part (composing a fresh
+ * bar) can be done ahead of time and the tap itself is instant */
+void     corr_regen_material(pattern_t *mat, const gen_t *g, uint16_t seed) ETCH_BANKED;
+uint16_t corr_regen_apply(pattern_t *p, const pattern_t *mat, uint16_t pick_seed, uint8_t what) ETCH_BANKED;
+
 /* Temporary fill drum masks derived from p's groove. */
 void     corr_fill(const pattern_t *p, uint16_t rnd, uint16_t *out) ETCH_BANKED;
 

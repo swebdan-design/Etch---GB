@@ -3,6 +3,29 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
+## Version 2.4 (2026-11-11)
+
+- **REGEN on LIVE.** The BPM row is now **RGN**. Tapping A instantly replaces exactly half of the bar (8 of the 16 steps, chosen at random) with new material in the song's key, scale and style.
+  - LEFT/RIGHT chooses ALL, BASS or DRUMS.
+  - Locks are respected, and SELECT+B undoes it.
+  - The new material is composed in the background, so the tap is instant: the change lands within 4 frames.
+- **BPM** moved to the SONG screen (next to SWING). It still shows in the header.
+- **Demo songs renamed:**
+  1. CORRODE
+  2. SLAG
+  3. 303HZ
+  4. CAUSTIC
+  5. RUSTROT
+  6. VOLTAGE
+  7. HEXDRUM
+  8. ACIDBURN
+
+  The music is unchanged; only the titles and project names changed. Slots saved from the old demos keep their old names.
+- **LIVE help line** now explains every macro row (e.g. `DARK<>BRIGHT`, `SQUELCH`, `HOW FAR IT WANDERS`).
+- **Manual:**
+  - Every LIVE and GEN control is explained with its range, what it does and what you hear.
+  - A comparison of FILL / REGEN / EVOLVE NOW / EVO.
+
 ## Version 2.3 (2026-11-11)
 
 This version is renumbered to 2.3 to reflect the substantial iterations since 1.0. The previous releases were 1.0 and 1.1; there were no public 2.0–2.2 releases.

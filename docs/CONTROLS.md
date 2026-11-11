@@ -66,11 +66,13 @@ CUT ███████      7     macros ...
 | drum step | A | Hit on / off |
 | drum step | B + A | Remove |
 | macro row | LEFT / RIGHT | Adjust; hold to sweep |
-| macro row | A + UP / DOWN | Adjust coarse (BPM ±10) |
-| macro row | A (tap) | **FILL**: a drum fill until the bar line, or through the next bar if late in the bar |
+| macro row | A + UP / DOWN | Adjust coarse |
+| macro row | A (tap) | **FILL**: a drum fill until the bar line, or through the next bar if late in the bar (all macro rows except RGN) |
+| RGN row | A (tap) | **REGEN**: exactly half the bar (8 random steps) is replaced with new material in the song's key, scale and style. SELECT+B undoes it. |
+| RGN row | LEFT / RIGHT | What REGEN replaces: ALL (bass + drums), BASS or DRUMS |
 | EVO row | LEFT / RIGHT | **STABLE** (no change) / **DRIFT** (a living song: every 4 bars every channel changes a little) / **CORRODE** (bigger changes every 2 bars) |
 
-Macros: CUT, RES, ENV, DEC, ACC, DRV, BPM, EVO (mode), MUT (mutation intensity). The bottom line always says what A does where the cursor is.
+Macros: CUT (filter brightness), RES (squelch), ENV (filter wow per note), DEC (sweep length), ACC (accent punch), DRV (distortion), **RGN (REGEN)**, EVO (evolution mode), MUT (how much evolution changes). The bottom line always says what the row does. **BPM and swing are on the SONG screen.**
 
 ## TRACK — tracker step editor
 

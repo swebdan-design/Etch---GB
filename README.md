@@ -12,7 +12,7 @@ Switch on, press START, and acid plays. From there you can perform it, reshape i
  SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE      (SELECT + LEFT/RIGHT)
 ```
 
-LIVE is home: watch, play and program the pattern. SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about).
+LIVE is home: watch, play and program the pattern, sweep the sound, fire fills, and **REGEN** (tap A on the RGN row to replace exactly half the bar with something new). SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about).
 
 **Living songs:** with EVO on DRIFT (the demo songs start this way), every 4 bars every channel changes a little, using randomness from your button timing, so in practice every listen is different. The manual (§12, *Will every listen be unique?*) explains how and the limits.
 
@@ -71,7 +71,7 @@ make emutest
 
 - `make hosttest` runs the CORROSION unit tests on the host (32 checks).
 - `tests/sameboy/build.sh` builds the optional emulator harness. Point it at a SameBoy checkout that has run `make lib bootroms`; RGBDS is needed for the boot ROMs.
-- `make emutest` runs the 77 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
+- `make emutest` runs the 95 integration checks in SameBoy: boot, screens, timing, audio, CORROSION, locks, undo, saves and tracks.
 
 `tests/profile.py` gives a per-function CPU profile of the ROM. `tools/record_demo.py` re-records the demo WAV.
 

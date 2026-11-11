@@ -142,6 +142,18 @@ The riff transforms (A–E → A–D–E → A–C–E, with accents appearing a
 - **Step lock (TRACK, L column), lane lock (SYNTH drum page, LOCK), bass lock and pattern lock (GEN):** after every mutation, all locked material is copied back from the source bit-for-bit. Host tests ran 8 000 mutations with step and lane locks set: zero violations, zero invalid patterns. The emulator test checks a locked step and the locked kick lane on the real ROM.
 - **Undo:** one generation deep. The undo buffer is written only at the moment a mutation (or GENERATE, groove, clear) actually commits.
 
+## 3b. REGEN (LIVE, RGN row)
+
+`corr_regen_material` composes a complete new bar with the GEN settings and a fresh random seed, using the same grammar as GENERATE. `corr_regen_apply` then:
+
+1. Picks **exactly 8** of the 16 steps at random (a partial Fisher–Yates shuffle over the unlocked steps). If fewer than 8 steps are unlocked, it takes all of them.
+2. Copies the new bass step and/or the new drum hits at those positions. ALL, BASS or DRUMS is chosen with LEFT/RIGHT on the RGN row.
+3. Sanitises the result. The only edits this can make outside the 8 steps are removing a slide that now leads into silence, or a tie that now follows silence. The sequencer already ignores both, so the audible change is exactly the 8 chosen steps.
+
+The material is prepared in the background in the main loop, the same way evolution candidates are, so the tap only does step 1–3 and is instant. It is refreshed whenever KEY, SCALE, STYLE, DENSITY, SYNCOP, ACCENT, SLIDE or OCTAVE change.
+
+Host test 8c: 200 runs across all styles and scales. Exactly 8 steps were picked every time, with no changes outside them except those markers, no lock violations, and all notes in scale. BASS mode leaves the drums alone and DRUMS mode the bass. A pattern lock blocks REGEN, and different seeds give different results.
+
 ## 4. Fills
 
 FILL (A on LIVE) derives temporary drum masks from the current groove and style. Examples: an ACID 16th-snare roll into the next bar with an open-hat lift; INDUSTRIAL machine-gun snare and 16th hats; ELECTRO snare flams.

@@ -53,7 +53,7 @@ def main():
     e.tick(240)
     e.press("start")                    # title -> LIVE, track 1 plays
     e.wav_start(tmp)
-    # --- T1 FIRST CONTACT: program on LIVE, open the filter, fill, close it
+    # --- D1 CORRODE: program on LIVE, open the filter, fill, close it
     e.tick(8 * SEC)
     e.press("down", hold=3, after=2)          # BS -> KK row (cursor on step 1)
     for _ in range(2):
@@ -82,13 +82,13 @@ def main():
     e.press("up", hold=3, after=2)           # CUT
     sweep(e, "left", 90)                      # cutoff back down
     e.tick(4 * SEC)
-    # --- T4 CORROSION: CORRODE mode rewrites the line every two bars
+    # --- D4 CAUSTIC: CORRODE mode rewrites the line every two bars
     row = load_track(e, 3, 0)
     e.tick(36 * SEC)
-    # --- T3 STATIC: dark electro
+    # --- D3 303HZ: dark electro
     row = load_track(e, 2, row)
     e.tick(22 * SEC)
-    # --- T6 WAREHOUSE: drive harder, evolve on demand
+    # --- D6 VOLTAGE: retune the kick, drive harder, REGEN, evolve on demand
     row = load_track(e, 5, row)
     e.tick(8 * SEC)
     sel(e, "left"); sel(e, "left")            # LIVE -> TRACK -> SYNTH
@@ -103,7 +103,10 @@ def main():
     for _ in range(5):
         e.press("down", hold=3, after=2)     # CUT -> DRV (LIVE keeps its cursor)
     e.press("right", hold=3, after=2)        # SOFT -> HARD
-    e.tick(8 * SEC)
+    e.tick(6 * SEC)
+    e.press("down", hold=3, after=2)         # DRV -> RGN
+    e.press("a")                              # REGEN: half the bar is new
+    e.tick(6 * SEC)
     sel(e, "a")                               # SELECT+A: evolve now
     e.tick(12 * SEC)
     e.wav_stop()

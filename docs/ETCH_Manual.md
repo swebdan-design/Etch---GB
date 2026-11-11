@@ -1,7 +1,7 @@
 # ETCH — A Generative Acid Machine
 ### by Synth Centric
 
-**User Manual — version 2.3**
+**User Manual — version 2.4**
 
 ![ETCH title screen](images/screen_title.png)
 
@@ -45,13 +45,14 @@ ETCH has so far been verified in emulators only. See `HARDWARE_COMPATIBILITY.md`
 ## 4. Quick start
 
 1. Switch on. The ETCH title appears.
-2. Press **START**. Track 1, *FIRST CONTACT*, starts immediately, and you are on **LIVE**, the home screen.
+2. Press **START**. Demo song 1, *CORRODE*, starts immediately, and you are on **LIVE**, the home screen.
 3. Press **DOWN** five times to reach **CUT**, then hold **RIGHT**. The filter opens and the bass starts to scream. Hold **LEFT** to close it again.
 4. Move up into the lanes. On the **KK** row, move to an empty step and press **A**: you have added a kick. Press **A** again to take it away.
 5. On the **BS** row, press **A** on an empty step to add a bass note. Hold **A** and press **RIGHT** to raise it a semitone, or **UP** for an octave.
-6. Press **SELECT + A**. At the next bar line, CORROSION rewrites a little of the line. Press **SELECT + B** to undo it.
-7. Press **SELECT + LEFT** to open the step editor, and **SELECT + LEFT** again for the sound engine. **SELECT + RIGHT** brings you back.
-8. Press **START** to stop.
+6. Move down to **RGN** and tap **A**: half the bar is instantly replaced with something new. Press **SELECT + B** to undo it.
+7. Press **SELECT + A**. At the next bar line, CORROSION rewrites a little of the line. **SELECT + B** undoes this too.
+8. Press **SELECT + LEFT** to open the step editor, and **SELECT + LEFT** again for the sound engine. **SELECT + RIGHT** brings you back.
+9. Press **START** to stop.
 
 ---
 
@@ -136,23 +137,32 @@ The top half is the whole pattern at a glance, and you can edit it directly:
 
 Accents, slides, ties, probability and conditions are set in TRACK.
 
-The lower half holds nine **macros**, each with a meter:
+The lower half holds nine **macros**. Move to one with UP/DOWN. **LEFT/RIGHT** changes it (hold to sweep), and **A + UP/DOWN** jumps in big steps. The bottom line always explains the row you're on.
 
-| Macro | What it does to the sound |
-|---|---|
-| **CUT** | Filter cutoff. Low is dark and muffled; high is bright and buzzing. The most important acid control. |
-| **RES** | Resonance: the squelchy, vocal peak. |
-| **ENV** | How far each note opens the filter. |
-| **DEC** | How long the filter takes to close: short is plucky, long gives evolving sweeps. |
-| **ACC** | How much louder and sharper accented notes are. |
-| **DRV** | Drive: OFF, SOFT (warm saturation) or HARD (digital clipping). |
-| **BPM** | Tempo, 60–220. |
-| **EVO** | Evolution mode: STABLE, DRIFT or CORRODE. |
-| **MUT** | Mutation intensity. |
+| Macro | Range | What it does | What you hear / when to use it |
+|---|---|---|---|
+| **CUT** | 0–31 | Filter cutoff: the basic brightness of the bass | Low = dark, muffled, underwater. High = bright, buzzing, aggressive. This is *the* acid control: slow sweeps of CUT are the sound of acid house. |
+| **RES** | 0–7 | Resonance: a peak at the cutoff | Low = smooth. High = the squelchy, "talking", whistling sound. Turn it up when you want the line to scream; it is most dramatic while CUT or ENV is moving. |
+| **ENV** | 0–15 | Envelope amount: how far each note opens the filter on top of CUT | 0 = every note has the same tone. High = every note "wows" open and closes again. Pairs with DEC. |
+| **DEC** | 0–15 | Decay: how quickly that envelope closes | Low = short, plucky, percussive notes. High = long, evolving sweeps. Raising DEC while RES is high gives the classic long squelch. |
+| **ACC** | 0–15 | Accent strength | How much louder and sharper the accented notes are (A column in TRACK). Higher ACC = a bigger difference between accented and plain notes. Runs of accents build up and get brighter. |
+| **DRV** | OFF / SOFT / HARD | Distortion | SOFT = warm, thicker saturation. HARD = buzzy digital clipping. Changes the attitude rather than the volume. |
+| **RGN** | ALL / BASS / DRUMS | **REGEN**, an action | **Tap A**: exactly half of the bar (8 of the 16 steps, picked at random) is instantly replaced with new material in the song's key, scale and style. LEFT/RIGHT chooses what is replaced: ALL (bass and drums at those 8 steps), BASS only or DRUMS only. Locked steps and lanes are never touched. **SELECT + B** undoes it. |
+| **EVO** | STABLE / DRIFT / CORRODE | Evolution: how the song changes by itself | STABLE = never changes. DRIFT = a *living song*: every 4 bars every channel changes a little, then drifts back toward the original. CORRODE = bigger changes every 2 bars; the song slowly turns into something new. See §12. |
+| **MUT** | 0–15 | Mutation: how much evolution changes each time | Only matters with EVO on DRIFT or CORRODE. Low = barely noticeable variations. High = more changes per phrase, and further from the original before DRIFT pulls back. Around 4–6 is subtle; 10+ is restless. |
 
-On a macro row, **LEFT/RIGHT** adjusts; hold to sweep, or use **A + UP/DOWN** for big jumps. **Tap A** for a **FILL**: a drum fill until the end of the bar, after which the groove returns by itself.
+**Tempo (BPM) is on the SONG screen** (two screens to the right), together with swing. It also still shows in the header.
 
-The bottom line always tells you what A does at the cursor.
+### Four ways to change the music on the fly
+
+| | How | What changes | How long it lasts |
+|---|---|---|---|
+| **FILL** | Tap A on any macro row except RGN | Drums only: a drum fill in the song's style | Until the end of the bar (or the next bar if late), then the groove returns by itself |
+| **REGEN** | Tap A on the RGN row | Exactly 8 of the 16 steps get new material: bass, drums or both | Permanent (undo with SELECT + B) |
+| **EVOLVE NOW** | SELECT + A, anywhere | A small mutation, as in DRIFT (or CORRODE if that is the mode) | Permanent, starting at the next bar (undo with SELECT + B) |
+| **EVO** | Set the EVO row to DRIFT or CORRODE | The song keeps changing by itself, every 4 or 2 bars | Until you set STABLE |
+
+REGEN's 8 steps are exactly half the bar. If tidying is needed, a neighbouring slide marker that now leads into silence, or a tie that now follows silence, is removed. These markers had no audible effect any more, so you hear exactly 8 steps change.
 
 Sound changes are immediate. Pattern changes wait for the bar line, and evolutions for the end of a phrase, so nothing knocks the music out of time.
 
@@ -271,15 +281,22 @@ How it works (in brief): the Game Boy has no filter. ETCH holds 1 024 pre-calcul
 
 CORROSION is ETCH's composer. It doesn't throw random notes around. It works with a **key and scale**, a small **pitch vocabulary**, a **motif** that repeats, **accent and slide habits**, and a **relationship with the kick drum**, all shaped by a **style**.
 
-| Setting | Use |
-|---|---|
-| KEY, SCALE, OCTAVE | Which notes are allowed and where they sit. MINOR, DORIAN and PHRYGIAN are dark; MIN PENT is safe; CHROMATIC is anything goes. |
-| STYLE | The rhythmic personality (see §8). Also chooses the groove that GROOVE loads. |
-| DENSITY | How busy. |
-| SYNCOP | How much the line avoids the beat. |
-| ACCENT, SLIDE | How often. |
-| MUTATE, MODE | Evolution (§12). |
-| SEED | Which version you get. |
+These settings shape everything CORROSION writes: GENERATE, GROOVE, REGEN, and the notes evolution chooses.
+
+| Setting | Range | What it does |
+|---|---|---|
+| **KEY** | C–B | The home note of the song. Every generated line starts and resolves here. |
+| **SCALE** | MINOR, MAJOR, DORIAN, PHRYGIAN, MIN PENT, CHROMATIC | Which notes are allowed. MINOR is classic dark acid. DORIAN is dark but hopeful. PHRYGIAN is the most sinister (flat second). MIN PENT is safe and bluesy, with no wrong notes. CHROMATIC is anything goes. |
+| **STYLE** | ACID HOUSE, ELECTRO, MINIMAL, BROKEN, INDUSTRIAL, SPARSE | The rhythmic personality: where notes and drum hits like to fall, how long the repeating motif is, and how the bass works around the kick (see §8). Also picks the groove that GROOVE loads. |
+| **OCTAVE** | 1–3 | How low or high the bass line sits |
+| **DENSITY** | 0–15 | How busy: more notes and more drum variations as it rises |
+| **SYNCOP** | 0–15 | Syncopation: how much the line avoids the beat and lands on the off-beats instead. High = funkier, more broken. |
+| **ACCENT** | 0–15 | How many accents the generator writes. Evolution also keeps roughly this many. |
+| **SLIDE** | 0–15 | How many slides (glides between notes) the generator writes |
+| **MUTATE** | 0–15 | The same setting as MUT on LIVE: how much each evolution changes |
+| **MODE** | STABLE, DRIFT, CORRODE | The same setting as EVO on LIVE |
+| **SEED** | 0000–FFFF | Which version of a groove you get from these settings. Same seed + same settings = same groove. |
+| **CODE** | 12 digits | The seed and settings in one shareable code (§11) |
 
 The action rows:
 
@@ -287,7 +304,7 @@ The action rows:
 - **GEN BASS** writes only the bass line.
 - **GEN DRUMS** writes only the drums; **GROOVE** loads the STYLE's drum groove.
 - **EVOLVE · UNDO** and **LOCK BASS · LOCK PATT** are also here.
-- **Tap A on the SEED row** to pick a new random seed and generates in one press. Keep pressing it to audition ideas.
+- **Tap A on the SEED row** to pick a new random seed and generate in one press. Keep pressing it to audition ideas.
 
 > **Workflow: generate a complete groove**
 > 1. GEN: KEY A, SCALE MINOR, STYLE ACID HOUSE, DENSITY 9, ACCENT 8, SLIDE 7.
@@ -432,7 +449,7 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 - **Probability on hats and ghost notes** (P 5–6) makes even a STABLE pattern feel alive.
 
 > **Workflow: a four-minute evolving acid piece**
-> 1. Load D1 *FIRST CONTACT* (FILE > LOAD, or press START at power-on). It runs in song mode with DRIFT.
+> 1. Load D1 *CORRODE* (FILE > LOAD, or press START at power-on). It runs in song mode with DRIFT.
 > 2. 0:00–1:00: let the chain play. Slowly raise CUT from 7 to about 14.
 > 3. 1:00: set EVO to CORRODE, MUT 8. Add RES up to 7. Fill (A) every 8 bars.
 > 4. 2:00: mute KK and SN on LIVE (A on the lane names) for 8 bars, then sweep DEC up. Unmute on a fill.
@@ -491,13 +508,15 @@ by Synth Centric
 
 *The eight tracks:*
 
-1. FIRST CONTACT
-2. CONCRETE
-3. STATIC
-4. CORROSION
-5. NIGHT SHIFT
-6. WAREHOUSE
-7. SIGNAL LOSS
-8. AFTERIMAGE
+1. CORRODE
+2. SLAG
+3. 303HZ
+4. CAUSTIC
+5. RUSTROT
+6. VOLTAGE
+7. HEXDRUM
+8. ACIDBURN
+
+(The song *CORRODE* and the evolution mode CORRODE share a name; the song starts in DRIFT.)
 
 All tracks © Synth Centric.

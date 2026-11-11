@@ -125,14 +125,14 @@ void app_fill(void)
  * pattern that will play after the next bar line, because that is where the
  * ISR commits it -- in song mode the chain usually changes pattern exactly
  * on a phrase boundary. */
-static void evo_service(void)
+static uint8_t evo_service(void)
 {
     uint8_t mode = proj.gen.mode, target = seq_playing ? seq_next_bar_pattern() : seq_cur;
     if (evo_state == EVO_READY && evo_target != target) {
         CRITICAL { if (evo_state == EVO_READY) evo_state = EVO_IDLE; }   /* playback moved on */
     }
-    if (evo_state != EVO_IDLE) return;
-    if (mode == EVO_STABLE && !evo_request) return;
+    if (evo_state != EVO_IDLE) return 0;
+    if (mode == EVO_STABLE && !evo_request) return 0;
     corr_mutate(&evo_tmp, &proj.pat[target], anchor_for(target), &proj.gen,
                 mode == EVO_STABLE ? EVO_DRIFT : mode, proj.gen.mutation,
                 (uint16_t)(evo_random() + (++evo_ctr)));
@@ -143,6 +143,34 @@ static void evo_service(void)
             evo_state = EVO_READY;
         }
     }
+    return 1;
+}
+
+/* REGEN material is composed in the background so the tap is instant */
+static pattern_t regen_mat;
+static uint8_t regen_ready;
+static gen_t regen_for;               /* GEN settings the material was made with */
+
+static uint8_t regen_service(void)
+{
+    if (regen_ready && !memcmp(&regen_for, &proj.gen, 8)) return 0;   /* key..octave */
+    memcpy(&regen_for, &proj.gen, sizeof(gen_t));
+    corr_regen_material(&regen_mat, &proj.gen, evo_random());
+    regen_ready = 1;
+    return 1;
+}
+
+uint16_t app_regen(uint8_t what)
+{
+    uint16_t mask;
+    pattern_t *p = &proj.pat[seq_cur];
+    if (p->lock & PLOCK_ALL) return 0;
+    regen_service();                  /* only slow if nothing was ready */
+    seq_backup_for_undo(seq_cur);
+    mask = corr_regen_apply(p, &regen_mat, evo_random(), what);
+    regen_ready = 0;                  /* fresh material for next time */
+    if (mask) app_pattern_edited();
+    return mask;
 }
 
 void app_evolve_now(void)
@@ -355,7 +383,7 @@ void main(void)
         if (proj.gen.mode == EVO_STABLE && (evo_cut_ofs || evo_tune_ofs[0] || evo_tune_ofs[1] ||
                                             evo_tune_ofs[2] || evo_tune_ofs[3]))
             sound_drift_reset();
-        evo_service();
+        if (!evo_service()) regen_service();   /* one heavy job per pass at most */
         t0 = (uint8_t)((uint8_t)sys_time - t0);
         if (t0 > main_worst) main_worst = t0;
     }

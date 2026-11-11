@@ -743,6 +743,62 @@ uint8_t corr_mutate(pattern_t *dst, const pattern_t *src, const pattern_t *anc,
 }
 
 /* ------------------------------------------------------------------------ */
+void corr_regen_material(pattern_t *mat, const gen_t *g, uint16_t seed) ETCH_BANKED
+{
+    gen_t g2;
+    memcpy(&g2, g, sizeof(gen_t));
+    g2.seed = seed ? seed : 0x2601;
+    pattern_clear(mat);
+    mat->style = g->style;
+    corr_generate(mat, &g2, GEN_ALL);             /* new material, whole bar */
+}
+
+uint16_t corr_regen_apply(pattern_t *p, const pattern_t *mat, uint16_t pick_seed, uint8_t what) ETCH_BANKED
+{
+    uint8_t idx[16], nfree = 0, s, i, l, n;
+    uint8_t bass_ok = (what & GEN_BASS) && !(p->lock & PLOCK_BASS);
+    uint8_t lanes_ok = 0;
+    uint16_t mask = 0;
+    if (p->lock & PLOCK_ALL) return 0;
+    for (l = 0; l < NUM_LANES; l++)
+        if ((what & GEN_DRUMS) && !(p->lock & (PLOCK_LANE0 << l))) lanes_ok |= (uint8_t)(1 << l);
+
+    /* eligible steps: something there may be replaced */
+    for (s = 0; s < 16; s++)
+        if ((bass_ok && !(p->flags[s] & STEP_LOCK)) || lanes_ok) idx[nfree++] = s;
+    corr_seed((uint16_t)(pick_seed ^ 0x3C5A));
+    n = nfree < 8 ? nfree : 8;
+    for (i = 0; i < n; i++) {                        /* partial Fisher-Yates */
+        uint8_t j = (uint8_t)(i + corr_randn((uint8_t)(nfree - i)));
+        uint8_t t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+        mask |= (uint16_t)1 << idx[i];
+    }
+    for (s = 0; s < 16; s++) {
+        uint16_t bit = (uint16_t)1 << s;
+        if (!(mask & bit)) continue;
+        if (bass_ok && !(p->flags[s] & STEP_LOCK)) {
+            p->note[s] = mat->note[s];
+            p->flags[s] = (uint8_t)(mat->flags[s] & ~STEP_LOCK);
+            p->prob[s] = mat->prob[s];
+        }
+        for (l = 0; l < NUM_LANES; l++) {
+            if (!(lanes_ok & (1 << l))) continue;
+            p->drum[l] = (uint16_t)((p->drum[l] & ~bit) | (mat->drum[l] & bit));
+        }
+    }
+    /* tidy markers that no longer do anything (a slide into silence, a tie
+     * after silence): inaudible, keeps the pattern valid */
+    pattern_sanitize(p);
+    return mask;
+}
+
+uint16_t corr_regen(pattern_t *p, const gen_t *g, uint16_t seed, uint8_t what) ETCH_BANKED
+{
+    if (p->lock & PLOCK_ALL) return 0;
+    corr_regen_material(&scratch, g, seed);
+    return corr_regen_apply(p, &scratch, seed, what);
+}
+
 void corr_fill(const pattern_t *p, uint16_t rnd, uint16_t *out) ETCH_BANKED
 {
     uint8_t st = p->style % STYLE_COUNT;

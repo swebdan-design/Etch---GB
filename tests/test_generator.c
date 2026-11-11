@@ -298,6 +298,64 @@ int main(void)
         CHECK(b.drum[LANE_CH] != a.drum[LANE_CH], "DRIFT did not move the hats");
     }
 
+    /* 8c. REGEN: exactly half the bar, nothing else, locks respected */
+    {
+        int bad_count = 0, outside = 0, inscale = 0, runs = 0, lockv = 0, s2, l2;
+        for (seed = 1; seed <= 200; seed++) {
+            uint16_t mask; int cnt = 0;
+            g = mkgen((uint16_t)(seed * 37), seed % STYLE_COUNT, seed % SCALE_COUNT, seed % 12);
+            pattern_clear(&a); corr_generate(&a, &g, GEN_ALL);
+            if (seed % 3 == 0) { a.flags[2] |= STEP_LOCK; a.lock = PLOCK_LANE0 << LANE_KICK; }
+            memcpy(&c, &a, sizeof a);
+            mask = corr_regen(&a, &g, (uint16_t)(seed * 977 + 5), GEN_ALL);
+            for (s2 = 0; s2 < 16; s2++) cnt += (mask >> s2) & 1;
+            if (cnt != 8) bad_count++;
+            for (s2 = 0; s2 < 16; s2++) {
+                if ((mask >> s2) & 1) continue;
+                /* outside the mask only validity corrections are allowed: a slide
+                 * that no longer leads into a note, or a tie whose preceding step
+                 * became a rest (it turns into a rest) */
+                {
+                    int tie_fix = (c.flags[s2] & 3) == STEP_TIE && (a.flags[s2] & 3) == STEP_REST
+                                  && (a.flags[(s2 + 15) & 15] & 3) == STEP_REST;   /* also cascades through tie chains */
+                    if (!tie_fix && (a.note[s2] != c.note[s2] || (a.flags[s2] & ~STEP_SLIDE) != (c.flags[s2] & ~STEP_SLIDE) || a.prob[s2] != c.prob[s2])) outside++;
+                }
+                for (l2 = 0; l2 < 4; l2++) if (((a.drum[l2] ^ c.drum[l2]) >> s2) & 1) outside++;
+            }
+            if (seed % 3 == 0) {
+                if (a.note[2] != c.note[2] || a.flags[2] != c.flags[2] || a.drum[LANE_KICK] != c.drum[LANE_KICK]) lockv++;
+            }
+            if (!notes_in_scale(&a, &g)) {
+                for (s2 = 0; s2 < 16; s2++)          /* locked step may be out of scale: ignore */
+                    if (!(a.flags[s2] & STEP_LOCK) && (a.flags[s2] & 3) == STEP_NOTE && !corr_in_scale(a.note[s2], g.key, g.scale)) { inscale++; break; }
+            }
+            if (!valid_pattern(&a, why)) inscale++;
+            runs++;
+        }
+        printf("  REGEN: %d runs, %d not exactly 8 steps, %d changes outside the chosen steps, %d lock violations, %d out-of-scale/invalid\n",
+               runs, bad_count, outside, lockv, inscale);
+        CHECK(bad_count == 0, "REGEN did not pick exactly 8 steps");
+        CHECK(outside == 0, "REGEN changed steps it did not pick");
+        CHECK(lockv == 0, "REGEN touched locked material");
+        CHECK(inscale == 0, "REGEN produced out-of-scale or invalid material");
+
+        g = mkgen(4, STYLE_ACID, SCALE_MINOR, 0);
+        pattern_clear(&a); corr_generate(&a, &g, GEN_ALL);
+        memcpy(&c, &a, sizeof a);
+        corr_regen(&a, &g, 1234, GEN_BASS);
+        CHECK(!memcmp(a.drum, c.drum, sizeof a.drum), "REGEN BASS changed the drums");
+        memcpy(&a, &c, sizeof a);
+        corr_regen(&a, &g, 1234, GEN_DRUMS);
+        CHECK(!memcmp(a.note, c.note, 16) && !memcmp(a.prob, c.prob, 16), "REGEN DRUMS changed the bass");
+        a.lock = PLOCK_ALL;
+        memcpy(&c, &a, sizeof a);
+        CHECK(corr_regen(&a, &g, 99, GEN_ALL) == 0 && !memcmp(&a, &c, sizeof a), "REGEN ignored the pattern lock");
+        /* two regens with different seeds give different results */
+        pattern_clear(&a); corr_generate(&a, &g, GEN_ALL); memcpy(&b, &a, sizeof a);
+        corr_regen(&a, &g, 111, GEN_ALL); corr_regen(&b, &g, 222, GEN_ALL);
+        CHECK(memcmp(&a, &b, sizeof a) != 0, "REGEN ignores its seed");
+    }
+
     /* 9. mutation determinism */
     g = mkgen(4242, STYLE_ELECTRO, SCALE_DORIAN, 2);
     pattern_clear(&a); corr_generate(&a, &g, GEN_ALL);

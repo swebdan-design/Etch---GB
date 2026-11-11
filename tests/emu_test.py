@@ -279,6 +279,10 @@ def main():
     # ---- synth: cutoff/resonance change timbre (isolated bass) ---------------
     et.e.press("start"); et.e.tick(10)                      # stop
     et.pset(CHAIN + 32, 0)                                  # loop mode: stay on this pattern
+    et.pset(GEN + G_MODE, 0)                                # STABLE: no evolution, no sound drift
+    et.e.tick(10)
+    rec("STABLE resets the live sound drift", et.e.rd("evo_cut_ofs") == 0 and
+        list(et.e.peek(et.e.sym("evo_tune_ofs"), 4)) == [0, 0, 0, 0])
     et.pset(MUTES, 0x1E)                                    # mute drums
     et.pset(SYNTH + S_ENV, 0); et.pset(SYNTH + S_ACC, 0)
     et.pset(SYNTH + S_DRV, 0); et.pset(SYNTH + S_SWING, 0)
@@ -427,7 +431,7 @@ def main():
     to_file(et)
     txt = "\n".join(et.e.screen_text())
     rec("FILE menu offers NEW / LOAD / SAVE / ABOUT",
-        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.3" in txt and "by Synth Centric" in txt)
+        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.4" in txt and "by Synth Centric" in txt)
     for _ in range(3):
         et.e.press("down")
     et.e.press("a"); et.e.tick(10)
@@ -476,10 +480,10 @@ def main():
     et.boot_to_live()
     et.e.press("start"); et.e.tick(5)                      # stop: LOAD must start playback
     file_open(et, 1)
-    rec("FILE > LOAD lists demos and saves", "D1 FIRST CONTACT" in "\n".join(et.e.screen_text()))
+    rec("FILE > LOAD lists demos and saves", "D1 CORRODE" in "\n".join(et.e.screen_text()))
     et.e.screenshot(os.path.join(art, "screen_file_load.png"))
     txt = "\n".join(et.e.screen_text())
-    rec("slot persists across power cycle", "S3 CONTACT" in txt or "S3*CONTACT" in txt, [r for r in et.e.screen_text() if r.startswith("S3")])
+    rec("slot persists across power cycle", "S3 CORRODE" in txt or "S3*CORRODE" in txt, [r for r in et.e.screen_text() if r.startswith("S3")])
     for _ in range(10):
         et.e.press("down")                                 # D1..D8, S1, S2 -> S3
     et.e.press("a"); et.e.press("a"); et.e.tick(20)
@@ -541,7 +545,7 @@ def main():
     et.pset(PAT + 64 * 32, 3)            # scribble on drum tune: load must reset it
     file_open(et, 1)
     txt = "\n".join(et.e.screen_text())
-    rec("v1 (ETCH 1.0) slot is recognised", "CONTACT" in txt and "CORRUPT" not in txt)
+    rec("v1 (ETCH 1.0) slot is recognised", "CORRODE" in txt and "CORRUPT" not in txt)
     for _ in range(10):
         et.e.press("down")
     et.e.press("a"); et.e.press("a"); et.e.tick(20)
@@ -553,7 +557,7 @@ def main():
     # ---- every demo song loads through FILE > LOAD and plays -----------------
     et = Etch(rom)
     et.boot_to_live()
-    names = ["CONTACT", "CONCRETE", "STATIC", "CORROSION", "NIGHTSHIFT", "WAREHOUSE", "SIGNALLOSS", "AFTERIMAGE"]
+    names = ["CORRODE", "SLAG", "303HZ", "CAUSTIC", "RUSTROT", "VOLTAGE", "HEXDRUM", "ACIDBURN"]
     for t in range(8):
         file_open(et, 1, menu_cur=0 if t == 0 else 1)      # FILE remembers LOAD after a load
         for _ in range(t):
@@ -565,6 +569,39 @@ def main():
         rec("demo D%d %-10s loads and plays" % (t + 1, names[t]),
             nm == names[t] and et.e.rd("seq_playing") == 1 and scr(et) == "LIVE" and rms(x) > 400,
             "name=%s bpm=%d rms=%.0f" % (nm, bpm, rms(x)))
+    et.stop()
+
+    # ---- REGEN on LIVE, BPM on SONG ----------------------------------------------
+    et = Etch(rom)
+    et.boot_to_live()
+    et.pset(CHAIN + 32, 0); et.pset(GEN + G_MODE, 0)       # loop mode, STABLE
+    for _ in range(11):
+        et.e.press("down")                                  # 5 lanes + CUT..DRV -> RGN
+    rec("LIVE: the BPM row is now REGEN", et.e.screen_text()[14].startswith("RGN"), et.e.screen_text()[14])
+    rec("LIVE: REGEN help line", "A:REGEN" in et.e.screen_text()[17], et.e.screen_text()[17])
+    et.e.tick(60)
+    cur = et.e.rd("seq_cur")
+    before = et.pat(cur)
+    et.e.press("a"); et.e.tick(4)
+    after = et.pat(cur)
+    pos = set()
+    for st in range(16):
+        if before[st] != after[st] or before[16 + st] != after[16 + st] or before[32 + st] != after[32 + st]:
+            pos.add(st)
+    for l in range(4):
+        b0 = before[48 + 2 * l] | before[49 + 2 * l] << 8
+        a0 = after[48 + 2 * l] | after[49 + 2 * l] << 8
+        pos |= {st for st in range(16) if (a0 ^ b0) >> st & 1}
+    rec("LIVE: A on REGEN replaces half the bar at once", 4 <= len(pos) <= 10 and after != before,
+        "steps touched %s (8 chosen; neighbouring slide/tie markers may be tidied)" % sorted(pos))
+    et.e.hold("select"); et.e.press("b", hold=5, after=3); et.e.release("select"); et.e.tick(5)
+    rec("LIVE: SELECT+B undoes a REGEN", et.pat(cur) == before)
+    sel(et, "right"); sel(et, "right")                      # GEN -> SONG
+    et.e.press("up"); et.e.press("up")                      # slot 1 -> SWING -> BPM
+    bpm0 = et.pb(SYNTH + S_BPM)[0]
+    et.e.hold("a"); et.e.press("up"); et.e.release("a"); et.e.tick(3)
+    rec("SONG: BPM still editable (A+UP = +10)", et.pb(SYNTH + S_BPM)[0] == bpm0 + 10,
+        "%d -> %d" % (bpm0, et.pb(SYNTH + S_BPM)[0]))
     et.stop()
 
     # ---- living songs: DRIFT evolves every channel, differently each listen --
@@ -583,7 +620,7 @@ def main():
         runs.append((now, commits, secs, orig, list(et.e.peek(et.e.sym("evo_tune_ofs"), 4)), et.e.rd("evo_cut_ofs")))
         et.stop()
     now, commits, secs, orig, tune, cut = runs[0]
-    phrases = secs / (16 * 60.0 / 124)                     # FIRST CONTACT: 124 BPM, DRIFT
+    phrases = secs / (16 * 60.0 / 124)                     # demo 1 CORRODE: 124 BPM, DRIFT
     rec("DRIFT on the demo evolves every 4 bars (also in song mode)", commits >= int(phrases) - 1,
         "%d evolutions in %.0f s (%.1f phrases)" % (commits, secs, phrases))
     bass = sum(1 for i in range(4) if orig[i][:48] != now[i][:48])

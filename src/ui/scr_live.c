@@ -3,7 +3,9 @@
  * LIVE: the home screen.  Overview, basic step sequencing and performance.
  *
  *   rows 3-7   BS KK SN CH OH lanes, 16 steps each (editable)
- *   rows 8-16  performance macros: CUT RES ENV DEC ACC DRV BPM EVO MUT
+ *   rows 8-16  performance macros: CUT RES ENV DEC ACC DRV RGN EVO MUT
+ *              (RGN = REGEN: A replaces exactly half the bar with new material;
+ *               BPM lives on the SONG screen)
  *   row 17     context help for whatever the cursor is on
  *
  *   D-pad            move (left of step 1 = the lane name)
@@ -32,7 +34,11 @@ static uint8_t edited_here;          /* A press already acted on this step */
 
 static const char * const lane_lbl[N_LANES] = { "BS", "KK", "SN", "CH", "OH" };
 static const char * const lane_long[N_LANES] = { "BASS ", "KICK ", "SNARE", "HAT  ", "OPEN " };
-static const char * const macro_lbl[N_MACROS] = { "CUT", "RES", "ENV", "DEC", "ACC", "DRV", "BPM", "EVO", "MUT" };
+static const char * const macro_lbl[N_MACROS] = { "CUT", "RES", "ENV", "DEC", "ACC", "DRV", "RGN", "EVO", "MUT" };
+#define M_RGN 6
+static uint8_t regen_what;            /* 0 ALL, 1 BASS, 2 DRUMS */
+static const char * const regen_n[3] = { "ALL  ", "BASS ", "DRUMS" };
+static const uint8_t regen_gen[3] = { GEN_ALL, GEN_BASS, GEN_DRUMS };
 static const char * const drive_names[3] = { "OFF ", "SOFT", "HARD" };
 
 static void draw_lanes(void)
@@ -82,7 +88,7 @@ static uint8_t macro_value(uint8_t m, uint8_t *max)
     case 3: *max = 15; return proj.synth.decay;
     case 4: *max = 15; return proj.synth.accent;
     case 5: *max = 2;  return proj.synth.drive;
-    case 6: *max = 160; return (uint8_t)(proj.synth.bpm - 60);
+    case 6: *max = 2; return regen_what;
     case 7: *max = 2;  return proj.gen.mode;
     default: *max = 15; return proj.gen.mutation;
     }
@@ -97,7 +103,10 @@ static void draw_macro(uint8_t m)
     ui_meter(4, y, 8, v, max);
     ui_put(12, y, 0);
     if (m == 5) ui_textn(13, y, drive_names[v], 7);
-    else if (m == 6) { ui_num(13, y, proj.synth.bpm, 3); ui_textn(16, y, " BPM", 4); }
+    else if (m == M_RGN) {
+        ui_textn(4, y, "50% NEW ", 8);         /* no meter: it is an action */
+        ui_textn(13, y, regen_n[regen_what], 7);
+    }
     else if (m == 7) ui_textn(13, y, corr_mode_names[v], 7);
     else { ui_num(13, y, v, 3); ui_fill(16, y, 4, 0); }
     if (cy == N_LANES + m) ui_invert(0, y, 3);
@@ -127,12 +136,17 @@ static void draw_help(void)
         ui_text(0, 17, evo_help[proj.gen.mode % 3]);
         return;
     }
-    if (cy == N_LANES + 8) {
-        ui_text(0, 17, "MUT: HOW MUCH CHANGE");
+    if (cy == N_LANES + M_RGN) {
+        ui_text(0, 17, "A:REGEN  </>:WHAT");
         return;
     }
     if (cy >= N_LANES) {
-        ui_text(0, 17, "</>:SET  A:FILL");
+        /* one line per macro: what it does, and A plays a fill */
+        static const char * const mhelp[N_MACROS] = {
+            "DARK<>BRIGHT A:FILL", "SQUELCH      A:FILL", "FILTER WOW   A:FILL",
+            "SWEEP LENGTH A:FILL", "ACCENT PUNCH A:FILL", "DISTORTION   A:FILL",
+            "", "", "HOW FAR IT WANDERS " };
+        ui_text(0, 17, mhelp[cy - N_LANES]);
         return;
     }
     if (cx == 0) {
@@ -179,7 +193,6 @@ void scr_live_enter(void) BANKED
 
 static void adjust(uint8_t m, int8_t d)
 {
-    int8_t big = d > 1 ? 1 : (d < -1 ? -1 : 0);
     switch (m) {
     case 0: proj.synth.cutoff = clampadd(proj.synth.cutoff, d, 0, 31); break;
     case 1: proj.synth.res = clampadd(proj.synth.res, d > 0 ? 1 : -1, 0, 7); break;
@@ -187,14 +200,23 @@ static void adjust(uint8_t m, int8_t d)
     case 3: proj.synth.decay = clampadd(proj.synth.decay, d, 0, 15); break;
     case 4: proj.synth.accent = clampadd(proj.synth.accent, d, 0, 15); break;
     case 5: proj.synth.drive = clampadd(proj.synth.drive, d > 0 ? 1 : -1, 0, 2); break;
-    case 6:
-        proj.synth.bpm = clampadd(proj.synth.bpm, (int8_t)(big ? big * 10 : d), 60, 220);
-        seq_set_tempo();
+    case M_RGN:
+        regen_what = (uint8_t)((regen_what + (d > 0 ? 1 : 2)) % 3);
         break;
     case 7: proj.gen.mode = clampadd(proj.gen.mode, d > 0 ? 1 : -1, 0, 2); evo_state = EVO_IDLE; draw_help(); break;
     default: proj.gen.mutation = clampadd(proj.gen.mutation, d, 0, 15); evo_state = EVO_IDLE; break;
     }
     draw_macro(m);
+}
+
+/* REGEN: replace exactly half of the bar (8 random steps) with new
+ * material in the GEN key / scale / style.  Instant, permanent, undoable. */
+static void regen(void)
+{
+    if (proj.pat[seq_cur].lock & PLOCK_ALL) { ui_msg("PATTERN LOCKED"); return; }
+    if (app_regen(regen_gen[regen_what])) ui_msg("REGEN: 8 STEPS NEW");
+    else ui_msg("ALL LOCKED");
+    draw_lanes();
 }
 
 /* bass step edit: d = semitones (0 = just make it a note) */
@@ -231,7 +253,10 @@ void scr_live_frame(void) BANKED
     if (cy >= N_LANES) {
         d = ui_edit(4);
         if (d) adjust((uint8_t)(cy - N_LANES), d);
-        if (ui_a_tap()) app_fill();
+        if (ui_a_tap()) {
+            if (cy == N_LANES + M_RGN) regen();
+            else app_fill();
+        }
     } else if (cx == 0) {
         if (ui_a_press()) {
             ui_a_consume();
