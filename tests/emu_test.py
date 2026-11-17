@@ -443,7 +443,7 @@ def main():
     for _ in range(3):
         et.e.press("down")
     et.e.press("a"); et.e.tick(10)
-    rec("ABOUT page 1 explains the product", "ACID SYNTHESIZER" in "\n".join(et.e.screen_text()))
+    rec("ABOUT page 1 explains the product", "A GENERATIVE ACID" in "\n".join(et.e.screen_text()))
     et.e.screenshot(os.path.join(art, "screen_about1.png"))
     et.e.press("right"); et.e.tick(5)
     rec("ABOUT page 2 explains generative music", "GENERATIVE MUSIC IS" in "\n".join(et.e.screen_text()))
