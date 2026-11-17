@@ -1,7 +1,7 @@
 # ETCH — A Generative Acid Machine
 ### by Synth Centric
 
-**User Manual — version 2.5**
+**User Manual — version 3.0**
 
 ![ETCH title screen](images/screen_title.png)
 
@@ -25,7 +25,7 @@ ETCH draws on the Roland TB-303 and on furrtek's GB-303 project, but its sound e
 
 ## 2. Hardware compatibility
 
-- Original Game Boy (DMG), Game Boy Pocket and Light, Game Boy Color (in DMG mode), and Game Boy Advance / SP (in DMG mode).
+- Original Game Boy (DMG), Game Boy Pocket and Light, Game Boy Color and Game Boy Advance / SP. On a Game Boy Color or GBA, ETCH 3.0 runs in colour mode and shows the series accent colour (#F45423) for the cursor, the current screen and the playhead; on the other models they show in black.
 - Any accurate emulator (SameBoy, BGB, Gambatte, mGBA, Emulicious and others).
 - Cartridge type: MBC5 with 32 KB battery-backed RAM, 128 KB ROM.
 - **Use headphones or line out.** The Game Boy speaker cannot reproduce bass.
@@ -62,10 +62,12 @@ ETCH has so far been verified in emulators only. See `HARDWARE_COMPATIBILITY.md`
 ### The screen row
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE
+ LIVE  ►  TRACK  ►  SYNTH  ►  GEN  ►  SONG  ►  FILE  ► (back to LIVE)
 ```
 
-**LIVE** is home. **SELECT + LEFT/RIGHT** moves along the row and stops at either end. Moving left takes you deeper into the music: first the step editor (TRACK), then the sound of each channel (SYNTH). Moving right takes you to the tools: the composer (GEN), the arrangement and tempo (SONG), and your files (FILE: new, load, save, about). Each move briefly shows the neighbouring screens on line 2.
+**LIVE** is home. **SELECT + LEFT/RIGHT** moves along the row and wraps round. Moving right takes you into the music, the step editor (TRACK) and the sound of each channel (SYNTH), then to the tools: the composer (GEN), the arrangement and tempo (SONG), and your files (FILE: new, load, save, about). Each move briefly shows the neighbouring screens on line 2. This is the order every ETCH uses, on the Game Boy Advance, the DS and the 3DS too.
+
+**The look.** ETCH 3.0 wears the face shared by the whole series: thin capitals, captions in grey and values in black, rounded step cells and hairline sliders. The cursor and the current screen are lit: black on a Game Boy, the series accent colour on a Game Boy Color.
 
 ### One way of editing everywhere
 
@@ -123,10 +125,10 @@ The complete list is in `CONTROLS.md`.
 
 The top half is the whole pattern at a glance, and you can edit it directly:
 
-- The **BS** row is the bass line. A filled cell is a note, a framed cell an accent, a cell with a tail a slide, and a bar a tie.
-- **KK SN CH OH** are kick, snare, closed hat and open hat/percussion.
-- The ▼ playhead walks along the top. The ◄ on the right marks the row you're on.
-- The small column after each lane name flashes when the lane plays, and shows ✕ when it is muted.
+- The **BAS** row is the bass line. A grey cell is a note, a black cell an accent, a cell with a tail a slide, and a bar a tie.
+- **KCK SNR HAT OPN** are kick, snare, closed hat and open hat/percussion. Kick hits are black, the others grey.
+- The ▼ playhead walks along the top. The ◄ on the right marks the row you're on, and the cursor cell is outlined.
+- A muted lane shows its hits as faint marks.
 
 **Step entry on LIVE:**
 
@@ -450,14 +452,14 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 - **Accents plus slides** carry most of the character in acid. Put them on off-beats.
 - **Let DRIFT play for minutes.** It keeps the groove recognisable while it breathes.
 - **Use CORRODE as a build.** Run it for 16 bars, then switch to STABLE when you find a line you like, and save it (FILE > SAVE).
-- **Mute the bass for breakdowns** (A on the BS name on LIVE), then bring it back on a fill.
+- **Mute the bass for breakdowns** (A on the BAS name on LIVE), then bring it back on a fill.
 - **Probability on hats and ghost notes** (P 5–6) makes even a STABLE pattern feel alive.
 
 > **Workflow: a four-minute evolving acid piece**
 > 1. Load D1 *CORRODE* (FILE > LOAD, or press START at power-on). It runs in song mode with DRIFT.
 > 2. 0:00–1:00: let the chain play. Slowly raise CUT from 7 to about 14.
 > 3. 1:00: set EVO to CORRODE, MUT 8. Add RES up to 7. Fill (A) every 8 bars.
-> 4. 2:00: mute KK and SN on LIVE (A on the lane names) for 8 bars, then sweep DEC up. Unmute on a fill.
+> 4. 2:00: mute KCK and SNR on LIVE (A on the lane names) for 8 bars, then sweep DEC up. Unmute on a fill.
 > 5. 2:30: if the line has wandered somewhere great, set EVO to STABLE to freeze it. SELECT+B takes back the last change.
 > 6. 3:30: set EVO to DRIFT, pull CUT down to 3, mute the bass, stop on the downbeat.
 > 7. Save the result to a slot.
@@ -468,7 +470,7 @@ An arrangement such as INTRO → GROOVE A → GROOVE B → BREAK → GROOVE C �
 
 | Problem | Solution |
 |---|---|
-| I hear almost no bass | Use headphones or line out. The speaker can't reproduce bass. Also check that CUT isn't at 0 and the BS lane isn't muted (✕ on LIVE). |
+| I hear almost no bass | Use headphones or line out. The speaker can't reproduce bass. Also check that CUT isn't at 0 and the BAS lane isn't muted (faint marks on LIVE). |
 | A button press did nothing | Values change with **A held + D-pad** (plain LEFT/RIGHT also works on the lists). SELECT combinations need SELECT held *first*. The bottom line of LIVE and the hints on TRACK say what A does. |
 | The pattern keeps changing by itself | EVO/MODE is DRIFT or CORRODE. Set STABLE, or lock what you want to keep. |
 | A pattern change doesn't happen | Changes wait for the next bar line. If SONG MODE is on, the chain decides; SELECT+UP/DOWN turns song mode off. |

@@ -12,9 +12,12 @@
 #define SCR_W 20
 #define SCR_H 18
 
-/* screens, left to right; SELECT+LEFT/RIGHT walks the row (no wrap).
- *   SYNTH  <  TRACK  <  LIVE  >  GEN  >  SONG  >  FILE                    */
-enum { SCR_SYNTH, SCR_TRACK, SCR_LIVE, SCR_GEN, SCR_SONG, SCR_FILE, SCR_COUNT, SCR_TITLE = 0xFE };
+/* the release (ETCH's CORROSION version stays in etch.h, shared byte for byte) */
+#define ETCH_RELEASE_STR "3.0"
+
+/* screens in the series order (SERIES_SPEC.md 3.1); SELECT+LEFT/RIGHT walks
+ * them and wraps:  LIVE > TRACK > SYNTH > GEN > SONG > FILE > LIVE         */
+enum { SCR_LIVE, SCR_TRACK, SCR_SYNTH, SCR_GEN, SCR_SONG, SCR_FILE, SCR_COUNT, SCR_TITLE = 0xFE };
 extern const char * const scr_names[SCR_COUNT];
 
 /* ---- shadow tile map --------------------------------------------------- */
@@ -24,7 +27,12 @@ uint8_t ui_get(uint8_t x, uint8_t y);
 void ui_fill(uint8_t x, uint8_t y, uint8_t w, uint8_t tile);
 void ui_text(uint8_t x, uint8_t y, const char *s);
 void ui_textn(uint8_t x, uint8_t y, const char *s, uint8_t n);  /* pad/clip to n */
-void ui_invert(uint8_t x, uint8_t y, uint8_t w);
+void ui_invert(uint8_t x, uint8_t y, uint8_t w);           /* the cursor / lit */
+void ui_capn(uint8_t x, uint8_t y, const char *s, uint8_t n);   /* a caption: dark grey */
+#define ui_cap(x, y, s) ui_capn((x), (y), (s), 0)
+void ui_dim(uint8_t x, uint8_t y, uint8_t w);              /* letters -> captions */
+void ui_cgb_init(void);                                    /* Game Boy Color palettes */
+extern uint8_t ui_cgb;
 void ui_num(uint8_t x, uint8_t y, uint16_t v, uint8_t digits);  /* space padded */
 void ui_num0(uint8_t x, uint8_t y, uint16_t v, uint8_t digits); /* zero padded  */
 void ui_hex(uint8_t x, uint8_t y, uint16_t v, uint8_t digits);
@@ -84,9 +92,9 @@ void app_fill_toggle(void);             /* latched fill on/off */
 uint16_t app_regen(uint8_t what);       /* GEN_ALL / GEN_BASS / GEN_DRUMS; mask of new steps */
 void app_evolve_now(void);
 void app_undo(void);
-void app_load_track(uint8_t t);
-void app_project_loaded(void);
-void app_new_project(void);
+void app_load_track(uint8_t t) BANKED;
+void app_project_loaded(void) BANKED;
+void app_new_project(void) BANKED;
 void app_go_live(uint8_t play);          /* switch to LIVE (and start playing) */
 uint8_t clampadd(uint8_t v, int8_t d, uint8_t lo, uint8_t hi);
 

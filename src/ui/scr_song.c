@@ -48,36 +48,36 @@ static void draw_slot(uint8_t i)
 
 static void draw_misc(void)
 {
-    ui_text(0, 2, "SONG MODE  ");
+    ui_capn(0, 2, "SONG MODE  ", 11);
     ui_textn(11, 2, proj.chain.song ? "ON  CHAIN" : "OFF LOOP ", 9);
     if (cur == C_SONG) ui_invert(0, 2, 9);
-    ui_text(0, 3, "BPM        ");
+    ui_capn(0, 3, "BPM        ", 11);
     ui_num(11, 3, proj.synth.bpm, 3);
     ui_fill(14, 3, 6, 0);
     if (cur == C_BPM) ui_invert(0, 3, 3);
-    ui_text(0, 4, "SWING      ");
+    ui_capn(0, 4, "SWING      ", 11);
     ui_num(11, 4, proj.synth.swing, 1);
     ui_put(12, 4, 0);
     ui_meter(13, 4, 4, proj.synth.swing, 8);
     if (cur == C_SWING) ui_invert(0, 4, 5);
     ui_fill(0, 13, SCR_W, 0);
-    ui_text(0, 14, "COPY P");
+    ui_cap(0, 14, "COPY P");
     ui_num0(6, 14, (uint16_t)(seq_cur + 1), 2);
-    ui_text(8, 14, " TO P");
+    ui_cap(8, 14, " TO P");
     ui_num0(13, 14, (uint16_t)(copy_to + 1), 2);
     ui_fill(15, 14, 5, 0);
     if (cur == C_COPY) ui_invert(0, 14, 15);
-    ui_text(0, 15, "CLEAR P");
+    ui_cap(0, 15, "CLEAR P");
     ui_num0(7, 15, (uint16_t)(seq_cur + 1), 2);
     ui_textn(9, 15, clear_arm ? " A AGAIN!" : "         ", 11);
     if (cur == C_CLEAR) ui_invert(0, 15, 9);
-    ui_text(0, 16, "PLAYING P");
+    ui_cap(0, 16, "PLAYING P");
     ui_num0(9, 16, (uint16_t)(seq_cur + 1), 2);
-    ui_text(11, 16, " BAR");
+    ui_cap(11, 16, " BAR");
     ui_num(15, 16, (uint16_t)(seq_loop + 1), 3);
     ui_fill(18, 16, 2, 0);
-    if (cur >= C_SLOT0 && cur < C_COPY) ui_text(0, 17, "A+</>:PAT A+^v:BARS ");
-    else ui_text(0, 17, "A+DPAD:SET  A:DO IT ");
+    if (cur >= C_SLOT0 && cur < C_COPY) ui_capn(0, 17, "A+</>:PAT A+^v:BARS ", 20);
+    else ui_capn(0, 17, "A+DPAD:SET  A:DO IT ", 20);
 }
 
 static void draw_body(void)

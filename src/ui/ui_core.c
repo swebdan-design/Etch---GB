@@ -37,7 +37,7 @@ uint8_t key_held, key_pressed, key_repeat, key_released;
 uint16_t ui_entropy = 0xE7C4;
 static uint8_t key_prev, rep_timer, a_used, b_used;
 
-const char * const scr_names[SCR_COUNT] = { "SYNTH", "TRACK", "LIVE ", "GEN  ", "SONG ", "FILE " };
+const char * const scr_names[SCR_COUNT] = { "LIVE ", "TRACK", "SYNTH", "GEN  ", "SONG ", "FILE " };
 extern uint8_t app_screen;
 
 static char msg_buf[SCR_W + 1];
@@ -79,12 +79,16 @@ void ui_fill(uint8_t x, uint8_t y, uint8_t w, uint8_t t)
     while (w--) ui_put(x++, y, t);
 }
 
+/* the series is all capitals (SERIES_SPEC.md 4.3): lower case shows as upper */
+static uint8_t tile_of(uint8_t c)
+{
+    if (c >= 'a' && c <= 'z') c -= 32;
+    return c >= 32 && c < 96 ? (uint8_t)(c - 32) : 0;
+}
+
 void ui_text(uint8_t x, uint8_t y, const char *s)
 {
-    while (*s && x < SCR_W) {
-        uint8_t c = (uint8_t)*s++;
-        ui_put(x++, y, c >= 32 && c < 128 ? (uint8_t)(c - 32) : 0);
-    }
+    while (*s && x < SCR_W) ui_put(x++, y, tile_of((uint8_t)*s++));
 }
 
 void ui_textn(uint8_t x, uint8_t y, const char *s, uint8_t n)
@@ -92,15 +96,42 @@ void ui_textn(uint8_t x, uint8_t y, const char *s, uint8_t n)
     while (n--) {
         uint8_t c = (uint8_t)*s;
         if (c) s++;
-        ui_put(x++, y, c >= 32 && c < 128 ? (uint8_t)(c - 32) : 0);
+        ui_put(x++, y, tile_of(c));
     }
 }
 
+/* captions: letters in dark grey (tiles 64..89), anything else as normal text;
+ * n = width to pad/clip to (0: the string's length) */
+void ui_capn(uint8_t x, uint8_t y, const char *s, uint8_t n)
+{
+    uint8_t c, pad = n != 0;
+    if (!pad) n = SCR_W;
+    while (n-- && x < SCR_W) {
+        c = (uint8_t)*s;
+        if (c) s++;
+        else if (!pad) break;                /* n = 0: just the string */
+        if (c >= 'a' && c <= 'z') c -= 32;
+        ui_put(x++, y, c >= 'A' && c <= 'Z' ? (uint8_t)(T_CAP_BASE - 'A' + c) : tile_of(c));
+    }
+}
+
+/* dim: the letters already in a run of cells become captions (dark grey) */
+void ui_dim(uint8_t x, uint8_t y, uint8_t w)
+{
+    while (w-- && x < SCR_W) {
+        uint8_t t = map[y][x];
+        if (t >= 'A' - 32 && t <= 'Z' - 32) ui_put(x, y, (uint8_t)(t + T_CAP_BASE - ('A' - 32)));
+        x++;
+    }
+}
+
+/* the cursor / lit: inverted text (black on DMG, the accent on GBC) */
 void ui_invert(uint8_t x, uint8_t y, uint8_t w)
 {
     while (w--) {
         uint8_t t = map[y][x];
         if (t < 64) ui_put(x, y, (uint8_t)(t + 96));
+        else if (t < 90) ui_put(x, y, (uint8_t)(t + 65));      /* caption letter -> lit letter */
         else if (t >= 96 && t < 160) ui_put(x, y, (uint8_t)(t - 96));
         x++;
     }
@@ -148,11 +179,28 @@ void ui_meter(uint8_t x, uint8_t y, uint8_t w, uint8_t v, uint8_t max)
     uint16_t num = (uint16_t)v * (uint16_t)(w * 8) + (max >> 1);
     uint8_t px = 0;
     if (max) while (num >= max) { num -= max; px++; }
+    /* full tiles, then the tile holding the thumb, then empty track */
     while (w--) {
-        if (px >= 8) { ui_put(x, y, T_METER8); px -= 8; }
-        else { ui_put(x, y, (uint8_t)(T_METER0 + px)); px = 0; }
+        if (px == 0xFF) ui_put(x, y, T_METER_E);
+        else if (px >= 8 && w) { ui_put(x, y, T_METER8); px -= 8; }
+        else { ui_put(x, y, (uint8_t)(T_METER0 + (px > 7 ? 7 : px))); px = 0xFF; }
         x++;
     }
+}
+
+/* Game Boy Color: each tile's palette follows from its number (gfx_cgb_attr) */
+uint8_t ui_cgb;
+static uint8_t attr_row[SCR_W];
+
+void ui_cgb_init(void)
+{
+    uint8_t y, x;
+    ui_cgb = (_cpu == CGB_TYPE);
+    if (!ui_cgb) return;
+    gfx_cgb_load();
+    VBK_REG = 1;                                     /* attributes: palette 0 everywhere */
+    for (y = 0; y < 32; y++) for (x = 0; x < 32; x++) set_vram_byte((uint8_t *)(0x9800 + ((uint16_t)y << 5) + x), 0);
+    VBK_REG = 0;
 }
 
 static void flush_row(uint8_t y)
@@ -161,6 +209,20 @@ static void flush_row(uint8_t y)
     vr_dst = 0x9800 + ((uint16_t)y << 5);
     vr_n = SCR_W;
     vram_copy_asm();
+    if (ui_cgb) {
+        uint8_t x;
+        const uint8_t *m = rowp(y);
+        for (x = 0; x < SCR_W; x++) {
+            uint8_t t = m[x];
+            attr_row[x] = (t >= 96 && t < 160) ? 1 : GFX_CGB_ACCENT(t) ? 2 : 0;
+        }
+        vr_src = (uint16_t)attr_row;
+        vr_dst = 0x9800 + ((uint16_t)y << 5);
+        vr_n = SCR_W;
+        VBK_REG = 1;
+        vram_copy_asm();
+        VBK_REG = 0;
+    }
     dirty[y] = 0;
 }
 
@@ -199,8 +261,8 @@ void ui_vram_tiles(uint8_t first, uint8_t count, const uint8_t *data)
 /* ---- header ------------------------------------------------------------ */
 static void row1_draw(void)
 {
-    if (row1_on) ui_text(0, 1, row1_buf);
-    else ui_fill(0, 1, SCR_W, T_RULE_HEAVY);
+    if (row1_on) { ui_text(0, 1, row1_buf); ui_dim(0, 1, SCR_W); }
+    else ui_fill(0, 1, SCR_W, T_RULE);
 }
 
 void ui_row1(const char *s)
@@ -226,10 +288,10 @@ void ui_header(const char *name)
     hc_cur = 0xFF;
     row1_on = 0;
     ui_fill(0, 0, SCR_W, 0);
-    ui_put(0, 0, app_screen > 0 && app_screen < SCR_COUNT ? T_ARROW_L : 0);
+    ui_put(0, 0, app_screen < SCR_COUNT ? T_ARROW_L : 0);
     ui_textn(1, 0, name, 5);
     ui_invert(1, 0, 5);
-    ui_put(6, 0, app_screen + 1 < SCR_COUNT ? T_ARROW_R : 0);
+    ui_put(6, 0, app_screen < SCR_COUNT ? T_ARROW_R : 0);
     if (!msg_timer) row1_draw();
     ui_header_update();
 }
@@ -267,7 +329,6 @@ void ui_msg(const char *s)
     msg_buf[SCR_W] = 0;
     msg_timer = 110;
     ui_text(0, 1, msg_buf);
-    ui_invert(0, 1, SCR_W);
 }
 
 void ui_msg_tick(void)
@@ -277,20 +338,17 @@ void ui_msg_tick(void)
     }
 }
 
-/* "<TRACK [LIVE ] GEN  >" -- where SELECT+LEFT/RIGHT lead from here */
+/* "<TRACK [LIVE ] GEN  >" -- where SELECT+LEFT/RIGHT lead from here (wraps) */
 void ui_msg_map(uint8_t scr)
 {
+    uint8_t l = scr ? scr - 1 : SCR_COUNT - 1, r = scr + 1 < SCR_COUNT ? scr + 1 : 0;
     ui_fill(0, 1, SCR_W, 0);
-    if (scr > 0) {
-        ui_put(0, 1, T_ARROW_L);
-        ui_textn(1, 1, scr_names[scr - 1], 5);
-    }
+    ui_put(0, 1, T_ARROW_L);
+    ui_capn(1, 1, scr_names[l], 5);
     ui_textn(7, 1, scr_names[scr], 5);
     ui_invert(7, 1, 5);
-    if (scr + 1 < SCR_COUNT) {
-        ui_textn(14, 1, scr_names[scr + 1], 5);
-        ui_put(19, 1, T_ARROW_R);
-    }
+    ui_capn(14, 1, scr_names[r], 5);
+    ui_put(19, 1, T_ARROW_R);
     msg_timer = 70;
 }
 

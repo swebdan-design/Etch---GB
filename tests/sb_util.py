@@ -81,8 +81,12 @@ class SB:
             s = ""
             for x in range(20):
                 t = vram[((y + scy) % 32) * 32 + (x + scx) % 32]
-                if t < 96:
+                if t < 64:
                     s += chr(t + 32)
+                elif t < 90:                     # ETCH 3.0 captions: grey letters A..Z
+                    s += chr(t - 64 + 65)
+                elif t < 96:
+                    s += " "
                 elif t < 160:
                     s += chr(t - 96 + 32)
                 else:

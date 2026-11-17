@@ -2,7 +2,8 @@
  * ETCH -- A Generative Acid Machine -- by Synth Centric
  * LIVE: the home screen.  Overview, basic step sequencing and performance.
  *
- *   rows 3-7   BS KK SN CH OH lanes, 16 steps each (editable)
+ *   rows 3-7   BAS KCK SNR HAT OPN lanes, 16 steps each (editable; a muted
+ *              lane shows its hits as faint marks)
  *   rows 8-16  performance macros: CUT RES ENV DEC ACC DRV RGN EVO MUT
  *              (RGN = REGEN: A replaces exactly half the bar with new material;
  *               BPM lives on the SONG screen)
@@ -33,7 +34,7 @@ static uint8_t last_event;
 static uint8_t act[N_LANES];
 static uint8_t edited_here;          /* A press already acted on this step */
 
-static const char * const lane_lbl[N_LANES] = { "BS", "KK", "SN", "CH", "OH" };
+static const char * const lane_lbl[N_LANES] = { "BAS", "KCK", "SNR", "HAT", "OPN" };
 static const char * const lane_long[N_LANES] = { "BASS ", "KICK ", "SNARE", "HAT  ", "OPEN " };
 static const char * const macro_lbl[N_MACROS] = { "CUT", "RES", "ENV", "DEC", "ACC", "DRV", "RGN", "EVO", "MUT" };
 #define M_RGN 6
@@ -62,11 +63,12 @@ static void draw_lanes(void)
         if (t == STEP_NOTE) tile = (f & STEP_ACCENT) ? T_CELL_ACC : (f & STEP_SLIDE) ? T_CELL_SLIDE : T_CELL_ON;
         else if (t == STEP_TIE) tile = T_CELL_TIE;
         else tile = off;
+        if ((proj.mutes & 1) && t != STEP_REST) tile = T_CELL_MUTED;
         if (cur && cy == 0) tile = (t == STEP_REST) ? T_CELL_CUR_OFF : T_CELL_CUR_ON;
         ui_put(x, ROW_LANE0, tile);
         for (l = 0; l < NUM_LANES; l++) {
             uint8_t on = (lm[l * 2 + byte] & bit) != 0;
-            tile = on ? T_CELL_ON : off;
+            tile = on ? ((proj.mutes & (2 << l)) ? T_CELL_MUTED : l == 0 ? T_CELL_ACC : T_CELL_ON) : off;
             if (cur && cy == l + 1) tile = on ? T_CELL_CUR_ON : T_CELL_CUR_OFF;
             ui_put(x, (uint8_t)(ROW_LANE0 + 1 + l), tile);
         }
@@ -99,7 +101,7 @@ static void draw_macro(uint8_t m)
 {
     uint8_t y = (uint8_t)(ROW_MACRO0 + m), max, v;
     v = macro_value(m, &max);
-    ui_text(0, y, macro_lbl[m]);
+    ui_cap(0, y, macro_lbl[m]);
     ui_put(3, y, 0);
     ui_meter(4, y, 8, v, max);
     ui_put(12, y, 0);
@@ -118,10 +120,8 @@ static void draw_lane_labels(void)
     uint8_t l, y;
     for (l = 0; l < N_LANES; l++) {
         y = (uint8_t)(ROW_LANE0 + l);
-        ui_text(0, y, lane_lbl[l]);
-        if (cy == l && cx == 0) ui_invert(0, y, 2);
-        if (proj.mutes & (1 << l)) ui_put(2, y, T_MUTE);
-        else ui_put(2, y, act[l] ? (uint8_t)(T_ACT0 + (act[l] >> 1)) : 0);
+        ui_cap(0, y, lane_lbl[l]);
+        if (cy == l && cx == 0) ui_invert(0, y, 3);
         ui_put(19, y, cy == l ? T_ARROW_L : 0);
     }
 }
@@ -174,6 +174,8 @@ static void draw_help(void)
     }
 }
 
+static void draw_help_dim(void) { draw_help(); ui_dim(0, 17, SCR_W); }
+
 static void draw_all(void)
 {
     uint8_t m;
@@ -183,7 +185,7 @@ static void draw_all(void)
     draw_lane_labels();
     draw_lanes();
     for (m = 0; m < N_MACROS; m++) draw_macro(m);
-    draw_help();
+    draw_help_dim();
 }
 
 void scr_live_enter(void) BANKED
@@ -204,7 +206,7 @@ static void adjust(uint8_t m, int8_t d)
     case M_RGN:
         regen_what = (uint8_t)((regen_what + (d > 0 ? 1 : 2)) % 3);
         break;
-    case 7: proj.gen.mode = clampadd(proj.gen.mode, d > 0 ? 1 : -1, 0, 2); evo_state = EVO_IDLE; draw_help(); break;
+    case 7: proj.gen.mode = clampadd(proj.gen.mode, d > 0 ? 1 : -1, 0, 2); evo_state = EVO_IDLE; draw_help_dim(); break;
     default: proj.gen.mutation = clampadd(proj.gen.mutation, d, 0, 15); evo_state = EVO_IDLE; break;
     }
     draw_macro(m);
@@ -251,7 +253,7 @@ void scr_live_frame(void) BANKED
     }
 
     /* B (tap): fill on / off -- the quickest way to drop a fill in and out */
-    if (ui_b_tap()) { app_fill_toggle(); draw_help(); }
+    if (ui_b_tap()) { app_fill_toggle(); draw_help_dim(); }
 
     /* ---- editing -------------------------------------------------------- */
     if (cy >= N_LANES) {
@@ -307,7 +309,7 @@ void scr_live_frame(void) BANKED
         draw_lanes();
         if (ocy >= N_LANES) draw_macro((uint8_t)(ocy - N_LANES));
         if (cy >= N_LANES) draw_macro((uint8_t)(cy - N_LANES));
-        draw_help();
+        draw_help_dim();
     }
 
     /* ---- dynamic display ------------------------------------------------ */

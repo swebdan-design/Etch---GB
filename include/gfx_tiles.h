@@ -2,6 +2,8 @@
 #ifndef GFX_TILES_H
 #define GFX_TILES_H
 #include <gbdk/platform.h>
+#define T_CAP_BASE 64
+#define CAP_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define T_INV_OFFSET 64
 #define T_SYM_BASE 160
 #define T_METER0 160
@@ -13,49 +15,55 @@
 #define T_METER6 166
 #define T_METER7 167
 #define T_METER8 168
-#define T_CELL_OFF 169
-#define T_CELL_BEAT 170
-#define T_CELL_ON 171
-#define T_CELL_ACC 172
-#define T_CELL_SLIDE 173
-#define T_CELL_TIE 174
-#define T_CELL_CUR_OFF 175
-#define T_CELL_CUR_ON 176
-#define T_PLAYHEAD 177
-#define T_PLAY 178
-#define T_STOP 179
-#define T_LOCK 180
-#define T_MUTE 181
-#define T_ACCENT 182
-#define T_SLIDE 183
-#define T_ARROW_R 184
-#define T_RULE 185
-#define T_RULE_HEAVY 186
-#define T_DOT 187
-#define T_BLOCK 188
-#define T_HATCH 189
-#define T_GREY 190
-#define T_VBAR 191
-#define T_EVO 192
-#define T_FILLMARK 193
-#define T_CORNER_TL 194
-#define T_CORNER_TR 195
-#define T_ACT0 196
-#define T_ACT1 197
-#define T_ACT2 198
-#define T_ACT3 199
-#define T_ACT4 200
-#define T_ARROW_L 201
-#define T_HIT 202
-#define T_TIE_DASH 203
-#define GFX_SYM_COUNT 44
-#define GFX_LOGO_TILES 41
-#define GFX_LOGO_W 16
-#define GFX_LOGO_H 5
+#define T_METER_E 169
+#define T_CELL_OFF 170
+#define T_CELL_BEAT 171
+#define T_CELL_ON 172
+#define T_CELL_ACC 173
+#define T_CELL_SLIDE 174
+#define T_CELL_TIE 175
+#define T_CELL_CUR_OFF 176
+#define T_CELL_CUR_ON 177
+#define T_CELL_MUTED 178
+#define T_PLAYHEAD 179
+#define T_PLAY 180
+#define T_STOP 181
+#define T_LOCK 182
+#define T_MUTE 183
+#define T_ACCENT 184
+#define T_SLIDE 185
+#define T_ARROW_R 186
+#define T_RULE 187
+#define T_RULE_HEAVY 188
+#define T_DOT 189
+#define T_BLOCK 190
+#define T_HATCH 191
+#define T_GREY 192
+#define T_VBAR 193
+#define T_EVO 194
+#define T_FILLMARK 195
+#define T_CORNER_TL 196
+#define T_CORNER_TR 197
+#define T_ACT0 198
+#define T_ACT1 199
+#define T_ACT2 200
+#define T_ACT3 201
+#define T_ACT4 202
+#define T_ARROW_L 203
+#define T_HIT 204
+#define T_TIE_DASH 205
+#define GFX_SYM_COUNT 46
+#define GFX_LOGO_TILES 70
+#define GFX_LOGO_W 20
+#define GFX_LOGO_H 4
 #define T_SCOPE_BASE 224
 BANKREF_EXTERN(gfx_data)
 void gfx_load_ui_tiles(void) BANKED;
 void gfx_load_logo(void) BANKED;
 void gfx_draw_logo(uint8_t x, uint8_t y) BANKED;
-void gfx_draw_subtitle(uint8_t y) BANKED;
+void gfx_draw_title_line(uint8_t n, uint8_t y) BANKED;
+/* Game Boy Color (SERIES_SPEC.md 4.1): 3 palettes x 4 colours, and each tile's palette */
+void gfx_cgb_load(void) BANKED;
+/* tiles shown in palette 2 (accent): CELL_CUR_OFF CELL_CUR_ON PLAYHEAD PLAY FILLMARK ARROW_L */
+#define GFX_CGB_ACCENT(t) ((t) == 176 || (t) == 177 || (t) == 179 || (t) == 180 || (t) == 195 || (t) == 203)
 #endif

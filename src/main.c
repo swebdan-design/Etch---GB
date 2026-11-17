@@ -33,7 +33,7 @@ volatile uint8_t main_worst;   /* longest main-loop iteration, frames */
 
 void app_redraw(void) { need_redraw = 1; }
 
-static void anchors_forget(uint8_t pat)
+void anchors_forget(uint8_t pat)
 {
     uint8_t i;
     for (i = 0; i < N_ANCHORS; i++)
@@ -220,67 +220,11 @@ void app_undo(void)
     }
 }
 
-void app_project_loaded(void)
-{
-    CRITICAL {
-        seq_cur = proj.start_pattern < NUM_PATTERNS ? proj.start_pattern : 0;
-        seq_queued = 0xFF;
-        seq_chain_pos = 0;
-        seq_chain_bar = 0;
-        if (proj.chain.song && proj.chain.pat[0] < NUM_PATTERNS) seq_cur = proj.chain.pat[0];
-        evo_state = EVO_IDLE;
-        evo_request = 0;
-        evo_undo_pat = 0xFF;
-    }
-    anchors_forget(0xFF);
-    evo_cut_ofs = 0;
-    { uint8_t l; for (l = 0; l < NUM_LANES; l++) evo_tune_ofs[l] = 0; }
-    seq_set_tempo();
-    drums_revoice();
-    app_redraw();
-}
-
-/* FILE > NEW: an empty project with a sensible starting sound */
-void app_new_project(void)
-{
-    static const uint8_t synth_def[16] = { 0, 8, 4, 8, 7, 8, 0, 6, 4, 0, 0, 0, 124, 0, 12, 1 };
-    static const char nm[PROJECT_NAME_LEN] = { 'U','N','T','I','T','L','E','D',' ',' ' };
-    uint8_t i;
-    seq_stop();
-    memcpy(proj.name, nm, PROJECT_NAME_LEN);
-    memcpy(&proj.synth, synth_def, sizeof(synth_t));
-    proj.gen.key = 9; proj.gen.scale = SCALE_MINOR; proj.gen.style = STYLE_ACID;
-    proj.gen.density = 9; proj.gen.sync = 5; proj.gen.accent = 8; proj.gen.slide = 7;
-    proj.gen.octave = 0; proj.gen.mutation = 5; proj.gen.mode = EVO_STABLE;
-    proj.gen.seed = ui_entropy;
-    for (i = 0; i < CHAIN_LEN; i++) { proj.chain.pat[i] = 0xFF; proj.chain.rep[i] = 1; }
-    proj.chain.pat[0] = 0;
-    proj.chain.rep[0] = 4;
-    proj.chain.song = 0;
-    proj.mutes = 0;
-    proj.start_pattern = 0;
-    for (i = 0; i < NUM_PATTERNS; i++) {
-        pattern_clear(&proj.pat[i]);
-        proj.pat[i].kit[1] = 2;                /* clap */
-    }
-    project_drum_defaults(&proj);
-    app_project_loaded();
-}
-
 void app_go_live(uint8_t play)
 {
     app_screen = SCR_LIVE;
     need_redraw = 1;
     if (play && !seq_playing) { seq_seed_live(ui_entropy); seq_start(); }
-}
-
-void app_load_track(uint8_t t)
-{
-    uint8_t was = seq_playing;
-    seq_stop();
-    preset_load(t);
-    app_project_loaded();
-    if (was) seq_start();
 }
 
 static void enter_screen(void)
@@ -314,8 +258,9 @@ static void global_keys(void)
 {
     if (key_held & J_SELECT) {
         /* the screens form one row:  SYNTH < TRACK < LIVE > GEN > SONG > SAVE */
-        if ((key_pressed & J_RIGHT) && app_screen + 1 < SCR_COUNT) { app_screen++; need_redraw = 1; show_map = 1; }
-        if ((key_pressed & J_LEFT) && app_screen > 0) { app_screen--; need_redraw = 1; show_map = 1; }
+        /* SERIES_SPEC.md 2.1: SELECT+LEFT/RIGHT walks the screens and wraps */
+        if (key_pressed & J_RIGHT) { app_screen = app_screen + 1 < SCR_COUNT ? app_screen + 1 : 0; need_redraw = 1; show_map = 1; }
+        if (key_pressed & J_LEFT) { app_screen = app_screen ? app_screen - 1 : SCR_COUNT - 1; need_redraw = 1; show_map = 1; }
         if (key_pressed & J_UP) {
             uint8_t base = seq_queued != 0xFF ? seq_queued : seq_cur;
             seq_queue_pattern((uint8_t)((base + 1) % NUM_PATTERNS));
@@ -344,6 +289,7 @@ void main(void)
     NR50_REG = 0x77;
     NR51_REG = 0xFF;
     BGP_REG = 0xE4;
+    ui_cgb_init();                       /* GBC: the series palettes (accent #F45423) */
     LCDC_REG |= LCDCF_BG8000;
     gfx_load_ui_tiles();
     preset_load(0);

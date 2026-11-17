@@ -53,7 +53,7 @@ static void draw_tabs(void)
     uint8_t i;
     ui_fill(0, 2, SCR_W, 0);
     for (i = 0; i < N_CH; i++) {
-        ui_text((uint8_t)(i * 4), 2, tab_n[i]);
+        ui_cap((uint8_t)(i * 4), 2, tab_n[i]);
         if (i == ch) ui_invert((uint8_t)(i * 4), 2, 3);
     }
     if (cur == 0xFF) ui_put(19, 2, T_ARROW_L);
@@ -63,7 +63,7 @@ static void draw_bass(uint8_t i)
 {
     uint8_t y = (uint8_t)(3 + i), v = *bptr(i);
     const char *name = 0;
-    ui_text(0, y, blbl[i]);
+    ui_cap(0, y, blbl[i]);
     if (cur == i) ui_invert(0, y, 6);
     ui_put(6, y, 0);
     switch (i) {
@@ -102,7 +102,7 @@ static void draw_drum(uint8_t i)
 {
     uint8_t y = (uint8_t)(4 + i * 2), v = dval(i), l = (uint8_t)(ch - 1);
     ui_fill(0, y, SCR_W, 0);
-    ui_text(0, y, dlbl[i]);
+    ui_cap(0, y, dlbl[i]);
     if (cur == i) ui_invert(0, y, 6);
     switch (i) {
     case 0:
@@ -160,7 +160,7 @@ static void draw_page(void)
     draw_tabs();
     if (ch == 0) {
         for (i = 0; i < N_BASS; i++) draw_bass(i);
-        ui_text(15, 3, "SCOPE");
+        ui_cap(15, 3, "SCOPE");
         for (i = 0; i < 4; i++) {
             ui_put((uint8_t)(15 + i), 4, (uint8_t)(T_SCOPE_BASE + i));
             ui_put((uint8_t)(15 + i), 5, (uint8_t)(T_SCOPE_BASE + 4 + i));
@@ -172,7 +172,7 @@ static void draw_page(void)
         for (i = 0; i < N_DRUM; i++) draw_drum(i);
         ui_textn(0, 16, ch_hw[ch], 20);
     }
-    ui_text(0, 17, ch ? "A:HEAR B+</>:CHANNEL" : "A:HEAR B+</>:CHANNEL");
+    ui_cap(0, 17, "A:HEAR B+</>:CHANNEL");
 }
 
 void scr_synth_enter(void) BANKED

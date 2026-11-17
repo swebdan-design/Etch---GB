@@ -12,10 +12,10 @@ BUILD     := build
 RELEASE   := release
 
 # MBC5 + RAM + BATTERY (0x1B), 128 KB ROM (8 banks), 32 KB SRAM (4 banks).
-# The CGB flag stays 0x00: ETCH is a DMG ROM that also runs on Game Boy
-# Color in its DMG compatibility mode.
+# The CGB flag is 0x80 (ETCH 3.0): a DMG ROM that also runs in colour mode on
+# a Game Boy Color, where it shows the series accent #F45423 (SERIES_SPEC.md).
 LDFLAGS   := -Wl-yt0x1B -Wl-yo8 -Wl-ya4 -autobank -Wb-ext=.rel \
-             -Wm-yn"ETCH" -Wm-yk"SC" -Wm-yl0x33 -Wl-m -Wl-j
+             -Wm-yn"ETCH" -Wm-yk"SC" -Wm-yl0x33 -Wm-yc -Wl-m -Wl-j
 CFLAGS    := -Iinclude -Wa-l
 # the interrupt-time code gets SDCC's expensive register allocator
 HOTFLAGS  := -Wf--max-allocs-per-node20000 -Wf--opt-code-speed
@@ -30,16 +30,20 @@ ASMS := $(sort $(wildcard src/*/*.s))
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(patsubst %.s,$(BUILD)/%.o,$(ASMS))
 HDRS := $(wildcard include/*.h) include/gfx_tiles.h
 
-.PHONY: all clean rom test hosttest emutest release distclean pdf
+.PHONY: all clean rom speccheck test hosttest emutest release distclean pdf
 
 all: rom
 
-rom: $(BUILD)/$(ROMNAME).gb
+rom: speccheck $(BUILD)/$(ROMNAME).gb
+
+# the series spec is shared by ETCH, ETCH II, ETCH DS and ETCH 3DS; ETCH DS holds the master
+speccheck:
+	@cd docs && sha256sum -c --quiet SERIES_SPEC.sha256 || (echo "docs/SERIES_SPEC.md differs from the series master (ETCH DS)"; exit 1)
 
 $(GEN_WAVES): tools/generate_waves.py
 	$(PYTHON) tools/generate_waves.py assets/generated_waves
 
-$(GEN_GFX): tools/gen_gfx.py
+$(GEN_GFX): tools/gen_gfx.py tools/series_fonts.py
 	$(PYTHON) tools/gen_gfx.py src/ui/gfx_data.c include/gfx_tiles.h
 
 src/audio/engine_tables.c: tools/gen_engine_tables.py

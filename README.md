@@ -9,10 +9,10 @@ Switch on, press START, and acid plays. From there you can perform it, reshape i
 ![SYNTH](docs/images/screen_synth.png) ![TRACK](docs/images/screen_track.png) ![LIVE](docs/images/screen_live.png)
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE      (SELECT + LEFT/RIGHT)
+ LIVE  ►  TRACK  ►  SYNTH  ►  GEN  ►  SONG  ►  FILE  ► (back to LIVE)   (SELECT + LEFT/RIGHT)
 ```
 
-LIVE is home: watch, play and program the pattern, sweep the sound, fire fills, and **REGEN** (tap A on the RGN row to replace exactly half the bar with something new). SELECT+LEFT opens the tracker-style step editor; SELECT+LEFT again opens the per-channel sound engine. SELECT+RIGHT takes you back, and further right are the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about).
+LIVE is home: watch, play and program the pattern, sweep the sound, fire fills, and **REGEN** (tap A on the RGN row to replace exactly half the bar with something new). SELECT+RIGHT walks through the tracker-style step editor (TRACK), the per-channel sound engine (SYNTH), the composer (GEN), arrangement and tempo (SONG), and FILE (new, load the demo songs or your saves, save, and about), then wraps back to LIVE; SELECT+LEFT goes the other way. ETCH 3.0 follows the ETCH series spec (`docs/SERIES_SPEC.md`) shared with ETCH II, ETCH DS and ETCH 3DS: the same screen order, controls and look.
 
 **Living songs:** with EVO on DRIFT (the demo songs start this way), every 4 bars every channel changes a little, using randomness from your button timing, so in practice every listen is different. The manual (§12, *Will every listen be unique?*) explains how and the limits.
 
@@ -20,7 +20,7 @@ Editing works the same everywhere: **A** places or toggles, **A + D-pad** change
 
 | | |
 |---|---|
-| ROM | `release/ETCH_by_Synth_Centric.gb` (128 KB, MBC5+RAM+BATTERY, 32 KB SRAM, DMG; runs on CGB/GBA in DMG mode) |
+| ROM | `release/ETCH_by_Synth_Centric.gb` (128 KB, MBC5+RAM+BATTERY, 32 KB SRAM; DMG, and colour mode on Game Boy Color / GBA, where it shows the series accent #F45423) |
 | Source | `release/ETCH_Source.zip` |
 | Demo | `release/ETCH_Demo.wav`: 2 minutes recorded from the ROM in SameBoy |
 | Manual | [`docs/ETCH_Manual.md`](docs/ETCH_Manual.md) and `release/ETCH_Manual.pdf` (`make pdf`) |

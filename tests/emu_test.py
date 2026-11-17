@@ -74,9 +74,8 @@ def sel(et, d):
 
 
 def to_file(et):
-    """LIVE -> GEN -> SONG -> FILE"""
-    for _ in range(3):
-        sel(et, "right")
+    """LIVE -> FILE (SELECT+LEFT wraps, SERIES_SPEC.md 2.1)"""
+    sel(et, "left")
 
 
 def file_open(et, item, menu_cur=0):
@@ -139,17 +138,17 @@ def main():
     rec("ROM header/logo/checksums valid", ok, str(info))
     rec("cartridge MBC5+RAM+BATTERY, 128K ROM, 32K RAM",
         info["cart_type"].startswith("1B") and info["rom_kb"] == 128 and info["ram_kb"] == 32)
-    rec("CGB flag 0x00 (DMG ROM, runs on CGB in DMG mode)", info["cgb_flag"] == "00")
+    rec("CGB flag 0x80 (DMG ROM with a Game Boy Color colour mode)", info["cgb_flag"] == "80")
 
     # ---- boot + title ------------------------------------------------------
     et = Etch(rom)
     et.e.tick(240)
     txt = "\n".join(et.e.screen_text())
-    rec("title shows 'by Synth Centric' exactly", "by Synth Centric" in txt)
+    rec("title shows 'BY SYNTH CENTRIC' (the series is all capitals)", "BY SYNTH CENTRIC" in txt)
     et.e.screenshot(os.path.join(art, "screen_title.png"))
     # the logo and subtitle are graphic tiles; verify they are on screen
     rows = et.e.screen_text()
-    rec("title logo + subtitle tiles drawn", rows[2].count("#") >= 10 and rows[9].count("#") >= 15)
+    rec("title wordmark + subtitle tiles drawn", rows[3].count("#") >= 10 and rows[7].count("#") >= 10)
     seen_press = False
     for _ in range(8):
         et.e.tick(8)
@@ -179,29 +178,24 @@ def main():
     x, sr = capture(et, os.path.join(art, "live_groove.wav"), 600)
     rec("audio output present during playback", rms(x) > 300, "rms=%.0f" % rms(x))
 
-    # ---- screens reachable: SYNTH < TRACK < LIVE > GEN > SONG > FILE --------
-    sel(et, "left")
-    rec("SELECT+LEFT from LIVE -> TRACK", scr(et) == "TRACK", et.e.screen_text()[0])
+    # ---- screens: LIVE > TRACK > SYNTH > GEN > SONG > FILE, wrapping (SERIES_SPEC.md 3.1)
+    sel(et, "right")
+    rec("SELECT+RIGHT from LIVE -> TRACK", scr(et) == "TRACK", et.e.screen_text()[0])
     et.e.tick(80)
     rec("TRACK shows column titles", et.e.screen_text()[1].startswith(" # NOT ASL KSHO P CD"), et.e.screen_text()[1])
     et.e.screenshot(os.path.join(art, "screen_track.png"))
-    sel(et, "left")
-    rec("SELECT+LEFT from TRACK -> SYNTH", scr(et) == "SYNTH")
+    sel(et, "right")
+    rec("SELECT+RIGHT from TRACK -> SYNTH", scr(et) == "SYNTH")
     et.e.screenshot(os.path.join(art, "screen_synth.png"))
-    sel(et, "left")
-    rec("SYNTH is the left end (no wrap)", scr(et) == "SYNTH")
-    sel(et, "right")
-    rec("SELECT+RIGHT from SYNTH -> TRACK", scr(et) == "TRACK")
-    sel(et, "right")
-    rec("SELECT+RIGHT from TRACK -> LIVE", scr(et) == "LIVE")
     for name in ("GEN", "SONG", "FILE"):
         sel(et, "right")
         rec("SELECT+RIGHT reaches %s" % name, scr(et) == name, et.e.screen_text()[0])
         et.e.screenshot(os.path.join(art, "screen_%s.png" % name.lower()))
     sel(et, "right")
-    rec("FILE is the right end (no wrap)", scr(et) == "FILE")
-    for _ in range(3):
-        sel(et, "left")
+    rec("SELECT+RIGHT wraps FILE -> LIVE", scr(et) == "LIVE")
+    sel(et, "left")
+    rec("SELECT+LEFT wraps LIVE -> FILE", scr(et) == "FILE")
+    sel(et, "right")
     rec("back to LIVE", scr(et) == "LIVE")
     rec("playback continued through all screen changes", et.e.rd("seq_playing") == 1)
 
@@ -238,7 +232,7 @@ def main():
     rec("LIVE: help line explains the cursor", "MUTE" in et.e.screen_text()[17], et.e.screen_text()[17])
 
     # ---- TRACK: tracker editing ---------------------------------------------
-    sel(et, "left")
+    sel(et, "right")
     # cursor: step 0, NOTE column; go to step 5
     for _ in range(5):
         et.e.press("down")
@@ -270,7 +264,7 @@ def main():
     rec("TRACK: B+A resets the condition", et.pb(pb + P_PROB + 5)[0] >> 4 == 0)
 
     # ---- SYNTH: per-channel pages, drum voicing reaches the hardware -----------
-    sel(et, "left")
+    sel(et, "right")
     et.e.hold("b"); et.e.press("right"); et.e.release("b"); et.e.tick(5)
     rec("SYNTH: B+RIGHT switches to the KICK page", "SOUND" in "\n".join(et.e.screen_text()))
     tune_off = 73 + 64 * 32
@@ -282,7 +276,7 @@ def main():
     et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
     rec("SYNTH: B+A restores the default", et.pb(tune_off)[0] == 8)
     for _ in range(2):
-        sel(et, "right")
+        sel(et, "left")
     rec("back to LIVE after editing", scr(et) == "LIVE")
     et.e.press("start"); et.e.tick(10)
 
@@ -445,22 +439,22 @@ def main():
     to_file(et)
     txt = "\n".join(et.e.screen_text())
     rec("FILE menu offers NEW / LOAD / SAVE / ABOUT",
-        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH v2.5" in txt and "by Synth Centric" in txt)
+        all(w in txt for w in ("NEW", "LOAD", "SAVE", "ABOUT")) and "ETCH 3.0" in txt and "BY SYNTH CENTRIC" in txt)
     for _ in range(3):
         et.e.press("down")
     et.e.press("a"); et.e.tick(10)
-    rec("ABOUT page 1 explains the product", "acid synthesizer" in "\n".join(et.e.screen_text()))
+    rec("ABOUT page 1 explains the product", "ACID SYNTHESIZER" in "\n".join(et.e.screen_text()))
     et.e.screenshot(os.path.join(art, "screen_about1.png"))
     et.e.press("right"); et.e.tick(5)
-    rec("ABOUT page 2 explains generative music", "Generative music is" in "\n".join(et.e.screen_text()))
+    rec("ABOUT page 2 explains generative music", "GENERATIVE MUSIC IS" in "\n".join(et.e.screen_text()))
     et.e.press("right"); et.e.tick(5)
     rows = [r.strip() for r in et.e.screen_text()[4:10]]
     bio = " ".join(rows)
     rec("ABOUT page 3: the Synth Centric bio, verbatim",
-        "Dan Schwebel, known as Synth Centric, is an Australian beat maker, music producer, writer and educator." in bio, bio)
+        "DAN SCHWEBEL, KNOWN AS SYNTH CENTRIC, IS AN AUSTRALIAN BEAT MAKER, MUSIC PRODUCER, WRITER AND EDUCATOR." in bio, bio)
     et.e.screenshot(os.path.join(art, "screen_about3.png"))
     et.e.press("b"); et.e.tick(5)
-    rec("B returns from ABOUT to the FILE menu", "demos/saves" in "\n".join(et.e.screen_text()))
+    rec("B returns from ABOUT to the FILE menu", "DEMOS/SAVES" in "\n".join(et.e.screen_text()))
     # NEW (A, A) -> empty project on LIVE
     for _ in range(3):
         et.e.press("up")
@@ -514,7 +508,7 @@ def main():
     et.e.press("down"); et.e.press("down")
     et.e.hold("b"); et.e.press("a"); et.e.release("b"); et.e.tick(3)
     et.e.press("a"); et.e.tick(20)
-    rec("SAVE: B+A, A erases a slot", "S3 --empty--" in "\n".join(et.e.screen_text()), [r for r in et.e.screen_text() if r.startswith("S3")])
+    rec("SAVE: B+A, A erases a slot", "S3 --EMPTY--" in "\n".join(et.e.screen_text()), [r for r in et.e.screen_text() if r.startswith("S3")])
     et.stop()
 
     # corrupt one data byte in slot 3 -> must be reported and refused
@@ -610,7 +604,7 @@ def main():
         "steps touched %s (8 chosen; neighbouring slide/tie markers may be tidied)" % sorted(pos))
     et.e.hold("select"); et.e.press("b", hold=5, after=3); et.e.release("select"); et.e.tick(5)
     rec("LIVE: SELECT+B undoes a REGEN", et.pat(cur) == before)
-    sel(et, "right"); sel(et, "right")                      # GEN -> SONG
+    sel(et, "left"); sel(et, "left")                        # LIVE -> FILE -> SONG
     et.e.press("up"); et.e.press("up")                      # slot 1 -> SWING -> BPM
     bpm0 = et.pb(SYNTH + S_BPM)[0]
     et.e.hold("a"); et.e.press("up"); et.e.release("a"); et.e.tick(3)
@@ -630,7 +624,7 @@ def main():
     rec("latched fill keeps playing across bars", et.e.rd("seq_fill") == 1 and (et.e.rd("seq_bar_total") - b0) % 256 >= 2)
     et.e.press("b"); et.e.tick(3)
     rec("LIVE: B toggles the fill off immediately", et.e.rd("seq_fill") == 0 and et.e.rd("seq_fill_hold") == 0)
-    sel(et, "right")                                         # on GEN
+    sel(et, "right")                                         # on TRACK
     et.e.hold("select"); et.e.press("start", hold=5, after=3); et.e.release("select"); et.e.tick(5)
     on = et.e.rd("seq_fill_hold") == 1 and et.e.rd("seq_playing") == 1
     et.e.hold("select"); et.e.press("start", hold=5, after=3); et.e.release("select"); et.e.tick(5)

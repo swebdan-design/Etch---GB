@@ -3,6 +3,17 @@
 **ETCH — A Generative Acid Machine**
 by Synth Centric
 
+## Version 3.0 (2026-11-16)
+
+ETCH now follows the ETCH series spec (`docs/SERIES_SPEC.md`), shared with ETCH II (Game Boy Advance), ETCH DS and ETCH 3DS, so the four machines look and work alike.
+
+- **Screen order:** LIVE ► TRACK ► SYNTH ► GEN ► SONG ► FILE, and SELECT + LEFT/RIGHT now **wraps** round. (2.5's order was SYNTH ◄ TRACK ◄ LIVE ► GEN ► SONG ► FILE.)
+- **The look of ETCH DS:** thin capitals from ETCH DS's font, captions in grey and values in black, rounded step cells (kick and accents black), hairline sliders with a thumb, a light hairline under the header, and the DS-style title screen.
+- **Game Boy Color colour mode:** on a GBC or GBA, the cursor, the current screen, the playhead and the play mark show the series accent colour **#F45423**. On other Game Boys they show in black, as before.
+- **LIVE lanes** are named BAS KCK SNR HAT OPN; a muted lane shows its hits as faint marks.
+- Lower-case text is shown in capitals, as across the series.
+- CORROSION is unchanged, byte for byte: every seed code makes the same groove. Saves from 2.5 load unchanged.
+
 ## Version 2.5 (2026-11-11)
 
 - **FILL on/off toggle.** Tap **B** on LIVE, or press **SELECT + START** on any screen, to latch the drum fill on. It keeps playing bar after bar until you press the same button again, and switching it off returns to the groove immediately.

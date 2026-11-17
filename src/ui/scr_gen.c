@@ -69,7 +69,7 @@ static void draw_row(uint8_t r)
     uint8_t y = (uint8_t)(2 + r);
     const pattern_t *p = &proj.pat[seq_cur];
     if (r <= R_CODE) {
-        ui_text(0, y, lbl[r]);
+        ui_cap(0, y, lbl[r]);
         if (cur == r) ui_invert(0, y, 7);
         ui_put(7, y, 0);
     }
@@ -81,7 +81,7 @@ static void draw_row(uint8_t r)
     case R_MODE: ui_textn(8, y, corr_mode_names[proj.gen.mode], 12); break;
     case R_SEED:
         ui_hex(8, y, proj.gen.seed, 4);
-        ui_textn(12, y, "  A:NEW ", 8);
+        ui_capn(12, y, "  A:NEW ", 8);
         break;
     case R_CODE: {
         char code[12];

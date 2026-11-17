@@ -118,19 +118,19 @@ static void draw_menu(void)
     uint8_t i, y;
     ui_row1(0);
     clear_body();
-    ui_text(0, 2, "PROJECT");
+    ui_cap(0, 2, "PROJECT");
     ui_textn(8, 2, proj.name, PROJECT_NAME_LEN);
     for (i = 0; i < N_MENU; i++) {
         y = (uint8_t)(4 + i * 2);
         ui_put(0, y, cur == i ? T_ARROW_R : 0);
         ui_textn(1, y, menu_n[i], 5);
         if (cur == i) ui_invert(1, y, 5);
-        ui_text(7, y, menu_d[i]);
+        ui_cap(7, y, menu_d[i]);
     }
     if (armed == 0) ui_text(1, 13, "A AGAIN: NEW SONG");
-    ui_text(0, 15, "ETCH v" ETCH_VERSION_STR);
-    ui_text(0, 16, "by Synth Centric");
-    ui_text(0, 17, "A:OPEN");
+    ui_text(0, 15, "ETCH " ETCH_RELEASE_STR);
+    ui_cap(0, 16, "by Synth Centric");
+    ui_cap(0, 17, "A:OPEN");
 }
 
 static void draw_load(void)
@@ -172,9 +172,9 @@ static void draw_save(void)
     }
     ui_text(0, 11, "SAVING");
     ui_textn(7, 11, proj.name, PROJECT_NAME_LEN);
-    ui_text(0, 13, "A:SAVE  A,A:REPLACE");
-    ui_text(0, 14, "B+A,A:ERASE");
-    ui_text(0, 17, "B:BACK");
+    ui_cap(0, 13, "A:SAVE  A,A:REPLACE");
+    ui_cap(0, 14, "B+A,A:ERASE");
+    ui_cap(0, 17, "B:BACK");
 }
 
 static void draw_about(void)
@@ -189,7 +189,7 @@ static void draw_about(void)
     ui_put(2, 17, '/' - 32);
     ui_put(3, 17, (uint8_t)('0' - 32 + N_ABOUT));
     ui_put(4, 17, page + 1 < N_ABOUT ? T_ARROW_R : 0);
-    ui_text(14, 17, "B:BACK");
+    ui_cap(14, 17, "B:BACK");
 }
 
 static void draw(void)

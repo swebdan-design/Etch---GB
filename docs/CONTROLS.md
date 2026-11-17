@@ -10,11 +10,11 @@ ETCH uses only the Game Boy's D-pad, A, B, START and SELECT.
 The screens sit side by side in one row, with **LIVE** as home:
 
 ```
- SYNTH  ◄  TRACK  ◄  LIVE  ►  GEN  ►  SONG  ►  FILE
+ LIVE  ►  TRACK  ►  SYNTH  ►  GEN  ►  SONG  ►  FILE  ► (back to LIVE)
 ```
 
-- **SELECT + LEFT / RIGHT** moves along the row. It stops at the ends; it does not wrap.
-- From LIVE, SELECT+LEFT opens the step editor (TRACK), and SELECT+LEFT again opens the sound engine (SYNTH). SELECT+RIGHT takes you back.
+- **SELECT + LEFT / RIGHT** moves along the row and wraps (FILE ► LIVE, LIVE ◄ FILE). This is the order every ETCH uses (`SERIES_SPEC.md`).
+- From LIVE, SELECT+RIGHT opens the step editor (TRACK), then the sound engine (SYNTH).
 - The arrows either side of the screen name in the header show which way you can go.
 - Each move briefly shows the neighbouring screens on line 2.
 
@@ -48,11 +48,11 @@ On list screens (the LIVE macros, SYNTH, GEN, SONG), plain LEFT/RIGHT also chang
 
 ```
     ▼ .   .   .        playhead
-BS ■□■■□□■□■■□■■□□■ ◄  bass        (cursor row marked on the right)
-KK ■□□□■□□□■□□□■□□□    kick
-SN □□□□■□□□□□□□■□□□    snare
-CH □□■□□□■□□□■□□□■□    closed hat
-OH □□□□□□□□□□□□□□■□    open hat / perc
+BAS ●○●●○○●○●●○●●○○● ◄  bass        (cursor row marked on the right)
+KCK ●○○○●○○○●○○○●○○○    kick
+SNR ○○○○●○○○○○○○●○○○    snare
+HAT ○○●○○○●○○○●○○○●○    closed hat
+OPN ○○○○○○○○○○○○○○●○    open hat / perc
 CUT ███████      7     macros ...
 ```
 

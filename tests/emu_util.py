@@ -82,8 +82,12 @@ class Emu:
             s = ""
             for x in range(20):
                 t = tm[(x + scx) % 32, (y + scy) % 32]
-                if 0 <= t < 96:
+                if 0 <= t < 64:
                     s += chr(t + 32)
+                elif 64 <= t < 90:               # ETCH 3.0 captions: grey letters A..Z
+                    s += chr(t - 64 + 65)
+                elif 90 <= t < 96:
+                    s += " "
                 elif 96 <= t < 160:
                     s += chr(t - 96 + 32)
                 else:
