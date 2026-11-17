@@ -69,7 +69,7 @@ static const char * const about[N_ABOUT][14] = {
         "release.",
         "",
         "" },
-    {   "ETCH v" ETCH_VERSION_STR,
+    {   "ETCH " ETCH_RELEASE_STR,
         "by Synth Centric",
         "",
         "Every listen is",
