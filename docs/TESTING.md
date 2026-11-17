@@ -5,6 +5,20 @@ by Synth Centric
 
 This report gives the result of every check that was actually run, and states clearly what could **not** be verified.
 
+## ETCH 3.0 (2026-11-17)
+
+ETCH 3.0 changes only the look, the screen order and the Game Boy Color colour mode (`docs/RELEASE_NOTES.md`). CORROSION and the sound engine are unchanged.
+
+| Suite | Result |
+|---|---|
+| Host: CORROSION (`make hosttest`) | **44 / 44** |
+| Emulator, SameBoy DMG-B (`make emutest`) | **101 / 101**: the 2.5 suite updated for the wrapping screen order (LIVE ► TRACK ► SYNTH ► GEN ► SONG ► FILE) and all-capitals text, plus 3 new Game Boy Color checks on the SameBoy CGB-E model: it boots in colour mode, the accent #F45423 shows, and audio plays |
+| Bank 0 | 427 bytes free (2.5: 511). The FILE-only services moved to a banked file (`src/app_bank.c`) to make room for the colour code. |
+
+Not tested on real hardware: in particular the accent on a real Game Boy Color screen.
+
+The sections below describe the 2.5 release.
+
 ## Test environment
 
 | | |

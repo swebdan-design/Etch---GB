@@ -474,7 +474,7 @@ def main():
     file_open(et, 2)
     rec("FILE > SAVE opens the slot list", "SAVE  B+A:ERASE" in et.e.screen_text()[1], et.e.screen_text()[1])
     txt = "\n".join(et.e.screen_text())
-    rec("blank SRAM shows empty slots (not corrupt)", "--empty--" in txt and "CORRUPT" not in txt)
+    rec("blank SRAM shows empty slots (not corrupt)", "--EMPTY--" in txt and "CORRUPT" not in txt)
     et.e.screenshot(os.path.join(art, "screen_file_save.png"))
     et.e.press("down"); et.e.press("down")
     et.e.press("a"); et.e.tick(20)
@@ -686,6 +686,27 @@ def main():
             pats_ok = False
     rec("5-minute CORRODE run: all 32 patterns valid", pats_ok)
     et.stop()
+
+    # ---- Game Boy Color: colour mode and the series accent (ETCH 3.0) -----------
+    cgb_boot = os.path.join(os.path.dirname(sb_util.BOOT), "cgb_boot.bin")
+    if os.path.exists(cgb_boot):
+        dmg_boot, sb_util.BOOT = sb_util.BOOT, cgb_boot
+        e = sb_util.SB(rom, model="cgb")
+        e.tick(300); e.press("start"); e.tick(120)
+        rec("GBC: boots in colour mode", e.rd("ui_cgb") == 1 and e.rd("seq_playing") == 1)
+        shot = os.path.join(art, "screen_cgb_live.png")
+        e.screenshot(shot, scale=1)
+        from PIL import Image
+        px = list(Image.open(shot).convert("RGB").getdata())
+        acc = sum(1 for (r, g, b) in px if r > 200 and 40 < g < 130 and b < 90)
+        rec("GBC: the accent #F45423 shows (cursor, screen name, playhead)", acc > 50, "%d accent pixels" % acc)
+        e.wav_start(os.path.join(art, "cgb_live.wav")); e.tick(300); e.wav_stop()
+        x, sr = sb_util.read_wav(os.path.join(art, "cgb_live.wav"))
+        rec("GBC: audio plays in colour mode", rms(x) > 300, "rms=%.0f" % rms(x))
+        e.stop()
+        sb_util.BOOT = dmg_boot
+    else:
+        rec("GBC checks need tests/sameboy/bin/cgb_boot.bin", False)
 
     passed = sum(1 for r in RESULTS if r[1])
     with open(os.path.join(art, "emu_results.txt"), "w") as f:

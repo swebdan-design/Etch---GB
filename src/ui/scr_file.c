@@ -133,25 +133,30 @@ static void draw_menu(void)
     ui_cap(0, 17, "A:OPEN");
 }
 
+/* one row of the LOAD list (cursor moves redraw only the rows they touch) */
+static void load_row(uint8_t i)
+{
+    uint8_t y = (uint8_t)(2 + i);
+    ui_fill(0, y, SCR_W, 0);
+    if (i < NUM_TRACKS) {
+        ui_put(0, y, 'D' - 32);
+        ui_put(1, y, (uint8_t)('1' - 32 + i));
+        ui_textn(3, y, track_names[i], 14);
+    } else {
+        slot_line(y, (uint8_t)(i - NUM_TRACKS));
+    }
+    if (cur == i) {
+        ui_invert(0, y, 2);
+        if (armed == i) { ui_text(16, y, "A?"); ui_invert(16, y, 2); }
+    }
+}
+
 static void draw_load(void)
 {
-    uint8_t i, y;
+    uint8_t i;
     ui_row1("LOAD  DEMOS / SAVES ");
     clear_body();
-    for (i = 0; i < N_LOAD; i++) {
-        y = (uint8_t)(2 + i);
-        if (i < NUM_TRACKS) {
-            ui_put(0, y, 'D' - 32);
-            ui_put(1, y, (uint8_t)('1' - 32 + i));
-            ui_textn(3, y, track_names[i], 14);
-        } else {
-            slot_line(y, (uint8_t)(i - NUM_TRACKS));
-        }
-        if (cur == i) {
-            ui_invert(0, y, 2);
-            if (armed == i) { ui_text(16, y, "A?"); ui_invert(16, y, 2); }
-        }
-    }
+    for (i = 0; i < N_LOAD; i++) load_row(i);
 }
 
 static void draw_save(void)
@@ -244,7 +249,11 @@ void scr_file_frame(void) BANKED
     n = view == V_MENU ? N_MENU : view == V_LOAD ? N_LOAD : NUM_SLOTS;
     if (nav & J_UP) cur = cur ? (uint8_t)(cur - 1) : (uint8_t)(n - 1);
     if (nav & J_DOWN) cur = (uint8_t)((cur + 1) % n);
-    if (old != cur) { armed = 0xFF; draw(); }
+    if (old != cur) {
+        armed = 0xFF;
+        if (view == V_LOAD) { load_row(old); load_row(cur); }
+        else draw();
+    }
 
     if (view == V_MENU) {
         if (ui_a_tap()) {
